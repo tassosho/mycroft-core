@@ -43,10 +43,7 @@ class FileStream:
         self.last_update_time = 0.0
 
         self.total_s = self.size / self.sample_rate / self.sample_width
-        if self.total_s > self.MIN_S_TO_DEBUG:
-            self.debug = True
-        else:
-            self.debug = False
+        self.debug = self.total_s > self.MIN_S_TO_DEBUG
 
     def calc_progress(self):
         return float(self.file.tell()) / self.size
@@ -157,7 +154,7 @@ def file_frame_rate(file_name):
 
 
 def print_ww_found_status(word, short_name):
-    print("Wake word " + bold_str(word) + " - " + short_name)
+    print(f"Wake word {bold_str(word)} - {short_name}")
 
 
 def test_false_negative(directory):
@@ -167,8 +164,8 @@ def test_false_negative(directory):
     tester = AudioTester(file_frame_rate(file_names[0]))
 
     def on_file_finish(short_name, times_found):
-        not_found_str = Color.RED + "Not found"
-        found_str = Color.GREEN + "Detected "
+        not_found_str = f"{Color.RED}Not found"
+        found_str = f"{Color.GREEN}Detected "
         status_str = not_found_str if times_found == 0 else found_str
         print_ww_found_status(status_str, short_name)
 
@@ -176,8 +173,8 @@ def test_false_negative(directory):
     total = len(file_names)
 
     print
-    print("Found " + bold_str(num_found) + " out of " + bold_str(total))
-    print(bold_str(to_percent(float(num_found) / total)) + " accuracy.")
+    print(f"Found {bold_str(num_found)} out of {bold_str(total)}")
+    print(f"{bold_str(to_percent(float(num_found) / total))} accuracy.")
     print
 
 
@@ -188,8 +185,8 @@ def test_false_positive(directory):
     tester = AudioTester(file_frame_rate(file_names[0]))
 
     def on_file_finish(short_name, times_found):
-        not_found_str = Color.GREEN + "Not found"
-        found_str = Color.RED + "Detected "
+        not_found_str = f"{Color.GREEN}Not found"
+        found_str = f"{Color.RED}Detected "
         status_str = not_found_str if times_found == 0 else found_str
         print_ww_found_status(status_str, short_name)
 
@@ -197,8 +194,8 @@ def test_false_positive(directory):
     total = len(file_names)
 
     print
-    print("Found " + bold_str(num_found) + " false positives")
-    print("in " + bold_str(str(total)) + " files")
+    print(f"Found {bold_str(num_found)} false positives")
+    print(f"in {bold_str(str(total))} files")
     print
 
 
@@ -211,12 +208,12 @@ def run_test():
     try:
         test_false_negative(false_neg_dir)
     except IOError:
-        print(bold_str("Warning: No wav files found in " + false_neg_dir))
+        print(bold_str(f"Warning: No wav files found in {false_neg_dir}"))
 
     try:
         test_false_positive(false_pos_dir)
     except IOError:
-        print(bold_str("Warning: No wav files found in " + false_pos_dir))
+        print(bold_str(f"Warning: No wav files found in {false_pos_dir}"))
 
     print("Complete!")
 

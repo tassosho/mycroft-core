@@ -46,7 +46,7 @@ class SkillGUI:
 
     def build_message_type(self, event):
         """Builds a message matching the output from the enclosure."""
-        return '{}.{}'.format(self.skill.skill_id, event)
+        return f'{self.skill.skill_id}.{event}'
 
     def setup_default_handlers(self):
         """Sets the handlers for the default messages."""
@@ -169,14 +169,13 @@ class SkillGUI:
                 page = resolve_resource_file(join('ui', name))
             else:
                 page = self.skill.find_resource(name, 'ui')
-            if page:
-                if self.config.get('remote'):
-                    page_urls.append(self.remote_url + "/" + page)
-                else:
-                    page_urls.append("file://" + page)
-            else:
-                raise FileNotFoundError("Unable to find page: {}".format(name))
+            if not page:
+                raise FileNotFoundError(f"Unable to find page: {name}")
 
+            if self.config.get('remote'):
+                page_urls.append(f"{self.remote_url}/{page}")
+            else:
+                page_urls.append(f"file://{page}")
         self.skill.bus.emit(Message("gui.page.show",
                                     {"page": page_urls,
                                      "index": index,
@@ -204,11 +203,10 @@ class SkillGUI:
         # Convert pages to full reference
         page_urls = []
         for name in page_names:
-            page = self.skill.find_resource(name, 'ui')
-            if page:
-                page_urls.append("file://" + page)
+            if page := self.skill.find_resource(name, 'ui'):
+                page_urls.append(f"file://{page}")
             else:
-                raise FileNotFoundError("Unable to find page: {}".format(name))
+                raise FileNotFoundError(f"Unable to find page: {name}")
 
         self.skill.bus.emit(Message("gui.page.delete",
                                     {"page": page_urls,

@@ -125,7 +125,7 @@ class EnclosureAPI:
             b (int): The blue value to apply
         """
         if idx < 0 or idx > 23:
-            raise ValueError('idx ({}) must be between 0-23'.format(str(idx)))
+            raise ValueError(f'idx ({str(idx)}) must be between 0-23')
         self.bus.emit(Message("enclosure.eyes.setpixel",
                               {'idx': idx, 'r': r, 'g': g, 'b': b}))
 
@@ -135,8 +135,7 @@ class EnclosureAPI:
             amount (int): 0-49 fills the right eye, 50-100 also covers left
         """
         if percentage < 0 or percentage > 100:
-            raise ValueError('percentage ({}) must be between 0-100'.
-                             format(str(percentage)))
+            raise ValueError(f'percentage ({str(percentage)}) must be between 0-100')
         self.bus.emit(Message("enclosure.eyes.fill",
                               {'percentage': percentage}))
 
@@ -170,8 +169,7 @@ class EnclosureAPI:
             volume (int): 0 to 11
         """
         if volume < 0 or volume > 11:
-            raise ValueError('volume ({}) must be between 0-11'.
-                             format(str(volume)))
+            raise ValueError(f'volume ({str(volume)}) must be between 0-11')
         self.bus.emit(Message("enclosure.eyes.volume", {'volume': volume}))
 
     def mouth_reset(self):

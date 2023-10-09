@@ -75,14 +75,12 @@ class EnclosureReader(Thread):
     def read(self):
         while self.alive:
             try:
-                data = self.serial.readline()[:-2]
-                if data:
+                if data := self.serial.readline()[:-2]:
                     try:
                         data_str = data.decode()
                     except UnicodeError as e:
                         data_str = data.decode('utf-8', errors='replace')
-                        LOG.warning('Invalid characters in response from '
-                                    ' enclosure: {}'.format(repr(e)))
+                        LOG.warning(f'Invalid characters in response from  enclosure: {repr(e)}')
                     self.process(data_str)
             except Exception as e:
                 LOG.error("Reading error: {0}".format(e))
@@ -191,14 +189,17 @@ class EnclosureReader(Thread):
             enable = 'enable' in data
             word = 'enabled' if enable else 'disabled'
 
-            LOG.info("Setting opt_in to: " + word)
+            LOG.info(f"Setting opt_in to: {word}")
             new_config = {'opt_in': enable}
             user_config = LocalConf(USER_CONFIG)
             user_config.merge(new_config)
             user_config.store()
 
-            self.bus.emit(Message("speak", {
-                'utterance': mycroft.dialog.get("learning " + word)}))
+            self.bus.emit(
+                Message(
+                    "speak", {'utterance': mycroft.dialog.get(f"learning {word}")}
+                )
+            )
 
     def stop(self):
         self.alive = False
@@ -334,10 +335,11 @@ class EnclosureMark1(Enclosure):
             self.timeout = self.config.get("timeout")
             self.serial = serial.serial_for_url(
                 url=self.port, baudrate=self.rate, timeout=self.timeout)
-            LOG.info("Connected to: %s rate: %s timeout: %s" %
-                     (self.port, self.rate, self.timeout))
+            LOG.info(
+                f"Connected to: {self.port} rate: {self.rate} timeout: {self.timeout}"
+            )
         except Exception:
-            LOG.error("Impossible to connect to serial port: "+str(self.port))
+            LOG.error(f"Impossible to connect to serial port: {str(self.port)}")
             raise
 
     def __register_events(self):

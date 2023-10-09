@@ -84,7 +84,7 @@ class PadatiousService(FallbackSkill):
             single_thread = message.data.get('single_thread', False)
         self.finished_training_event.clear()
 
-        LOG.info('Training... (single_thread={})'.format(single_thread))
+        LOG.info(f'Training... (single_thread={single_thread})')
         self.container.train(single_thread=single_thread)
         LOG.info('Training complete.')
 
@@ -128,10 +128,10 @@ class PadatiousService(FallbackSkill):
         file_name = message.data['file_name']
         name = message.data['name']
 
-        LOG.debug('Registering Padatious ' + object_name + ': ' + name)
+        LOG.debug(f'Registering Padatious {object_name}: {name}')
 
         if not isfile(file_name):
-            LOG.warning('Could not find file ' + file_name)
+            LOG.warning(f'Could not find file {file_name}')
             return
 
         register_func(name, file_name)
@@ -151,14 +151,14 @@ class PadatiousService(FallbackSkill):
             return False
 
         utt = message.data.get('utterance', '')
-        LOG.debug("Padatious fallback attempt: " + utt)
+        LOG.debug(f"Padatious fallback attempt: {utt}")
         intent = self.calc_intent(utt)
 
         if not intent or intent.conf < threshold:
             # Attempt to use normalized() version
             norm = message.data.get('norm_utt', '')
             if norm != utt:
-                LOG.debug("               alt attempt: " + norm)
+                LOG.debug(f"               alt attempt: {norm}")
                 intent = self.calc_intent(norm)
                 utt = norm
         if not intent or intent.conf < threshold:

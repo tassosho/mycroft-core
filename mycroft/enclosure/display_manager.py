@@ -67,7 +67,7 @@ def _write_data(dictionary):
 
             else:
                 data = {}
-                LOG.info("Display Manager is creating " + dispFile.name)
+                LOG.info(f"Display Manager is creating {dispFile.name}")
 
             for key in dictionary:
                 data[key] = dictionary[key]
@@ -134,12 +134,7 @@ class DisplayManager:
             string: The active skill's name
         """
         data = _read_data()
-        active_skill = ""
-
-        if "active_skill" in data:
-            active_skill = data["active_skill"]
-
-        return active_skill
+        return data["active_skill"] if "active_skill" in data else ""
 
     def remove_active(self):
         """ Clears the active skill """

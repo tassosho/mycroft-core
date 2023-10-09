@@ -57,11 +57,10 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
     try:
         if not os.path.isfile(cache_text_file):
             os.makedirs(cache_audio_dir)
-            f = open(cache_text_file, 'w')
-            for each_path in cache_dialog_path:
-                if os.path.exists(each_path):
-                    write_cache_text(each_path, f)
-            f.close()
+            with open(cache_text_file, 'w') as f:
+                for each_path in cache_dialog_path:
+                    if os.path.exists(each_path):
+                        write_cache_text(each_path, f)
             LOG.debug("Completed generating cache")
         else:
             LOG.debug("Cache file 'cache_text.txt' already exists")
@@ -70,7 +69,7 @@ def generate_cache_text(cache_audio_dir, cache_text_file):
 
 
 def write_cache_text(cache_path, f):
-    for file in glob.glob(cache_path + "/*.dialog"):
+    for file in glob.glob(f"{cache_path}/*.dialog"):
         try:
             with open(file, 'r') as fp:
                 all_dialogs = fp.readlines()
@@ -109,9 +108,10 @@ def download_audio(cache_audio_dir, cache_text_file):
                 all_dialogs = fp.readlines()
                 for each_dialog in all_dialogs:
                     each_dialog = each_dialog.strip()
-                    key = str(hashlib.md5(
-                        each_dialog.encode('utf-8', 'ignore')).hexdigest())
-                    wav_file = os.path.join(cache_audio_dir, key + '.wav')
+                    key = hashlib.md5(
+                        each_dialog.encode('utf-8', 'ignore')
+                    ).hexdigest()
+                    wav_file = os.path.join(cache_audio_dir, f'{key}.wav')
                     each_dialog = parse.quote(each_dialog)
 
                     mimic2_url = MIMIC2_URL + each_dialog + '&visimes=True'
@@ -124,27 +124,23 @@ def download_audio(cache_audio_dir, cache_text_file):
                             with open(wav_file, 'wb') as audiofile:
                                 audiofile.write(audio)
                         if vis:
-                            pho_file = os.path.join(cache_audio_dir,
-                                                    key + ".pho")
+                            pho_file = os.path.join(cache_audio_dir, f"{key}.pho")
                             with open(pho_file, "w") as cachefile:
                                 cachefile.write(json.dumps(vis))  # Mimic2
                                 # cachefile.write(str(vis))  # Mimic
                     except Exception as e:
                         # Skip this dialog and continue
-                        LOG.error("Unable to get pre-loaded cache "
-                                  "due to ({})".format(repr(e)))
+                        LOG.error(f"Unable to get pre-loaded cache due to ({repr(e)})")
 
-            LOG.debug("Completed getting cache for {}".format(TTS))
+            LOG.debug(f"Completed getting cache for {TTS}")
 
         else:
-            LOG.debug("Pre-loaded cache for {} already exists".
-                      format(TTS))
+            LOG.debug(f"Pre-loaded cache for {TTS} already exists")
     else:
         missing_path = cache_text_file if not \
             os.path.isfile(cache_text_file)\
             else cache_audio_dir
-        LOG.error("Path ({}) does not exist for getting the cache"
-                  .format(missing_path))
+        LOG.error(f"Path ({missing_path}) does not exist for getting the cache")
 
 
 def copy_cache(cache_audio_dir):
@@ -161,11 +157,9 @@ def copy_cache(cache_audio_dir):
         files = os.listdir(cache_audio_dir)
         for f in files:
             shutil.copy2(os.path.join(cache_audio_dir, f), dest)
-        LOG.debug("Copied all pre-loaded cache for {} to {}"
-                  .format(TTS, dest))
+        LOG.debug(f"Copied all pre-loaded cache for {TTS} to {dest}")
     else:
-        LOG.debug("No Source directory for {} pre-loaded cache"
-                  .format(TTS))
+        LOG.debug(f"No Source directory for {TTS} pre-loaded cache")
 
 
 # Start here

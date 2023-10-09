@@ -48,10 +48,7 @@ def _get_page_data(message):
     # Note:  'page' can be either a string or a list of strings
     if 'page' not in data:
         raise ValueError("Page missing in data")
-    if 'index' in data:
-        index = data['index']
-    else:
-        index = 0
+    index = data['index'] if 'index' in data else 0
     page = data.get("page", "")
     namespace = data.get("__from", "")
     return page, namespace, index
@@ -120,7 +117,7 @@ class Enclosure:
             if gui.socket:
                 gui.socket.send(*args, **kwargs)
             else:
-                LOG.error('GUI connection {} has no socket!'.format(gui))
+                LOG.error(f'GUI connection {gui} has no socket!')
 
     def on_gui_send_event(self, message):
         """ Send an event to the GUIs. """
@@ -131,7 +128,7 @@ class Enclosure:
                     'params': message.data.get('params')}
             self.send(data)
         except Exception as e:
-            LOG.error('Could not send event ({})'.format(repr(e)))
+            LOG.error(f'Could not send event ({repr(e)})')
 
     def on_gui_set_value(self, message):
         data = message.data
@@ -187,10 +184,10 @@ class Enclosure:
             LOG.exception(repr(e))
 
     def __find_namespace(self, namespace):
-        for i, skill in enumerate(self.loaded):
-            if skill[0] == namespace:
-                return i
-        return None
+        return next(
+            (i for i, skill in enumerate(self.loaded) if skill[0] == namespace),
+            None,
+        )
 
     def __insert_pages(self, namespace, pages):
         """ Insert pages into the namespace
@@ -219,7 +216,7 @@ class Enclosure:
             namespace (str): Namespace to remove from
             pos (int):      Page position to remove
         """
-        LOG.debug("Deleting {} from {}".format(pos, namespace))
+        LOG.debug(f"Deleting {pos} from {namespace}")
         self.send({"type": "mycroft.gui.list.remove",
                    "namespace": namespace,
                    "position": pos,
@@ -273,7 +270,7 @@ class Enclosure:
         # Seems like the namespace is moved to the top automatically when
         # a page change is done. Deactivating this for now.
         if self.explicit_move:
-            LOG.debug("move {} to {}".format(from_pos, to_pos))
+            LOG.debug(f"move {from_pos} to {to_pos}")
             self.send({"type": "mycroft.session.list.move",
                        "namespace": "mycroft.system.active_skills",
                        "from": from_pos, "to": to_pos,
@@ -295,8 +292,9 @@ class Enclosure:
             LOG.exception(repr(e))
             num = 0
 
-        LOG.debug('Switching to already loaded page at '
-                  'index {} in namespace {}'.format(num, namespace))
+        LOG.debug(
+            f'Switching to already loaded page at index {num} in namespace {namespace}'
+        )
         self.send({"type": "mycroft.events.triggered",
                    "namespace": namespace,
                    "event_name": "page_gained_focus",
@@ -314,7 +312,7 @@ class Enclosure:
               - Separate into multiple functions/methods
         """
 
-        LOG.debug("GUIConnection activating: " + namespace)
+        LOG.debug(f"GUIConnection activating: {namespace}")
         pages = page if isinstance(page, list) else [page]
 
         # find namespace among loaded namespaces
@@ -331,9 +329,9 @@ class Enclosure:
                     # position 0
                     self.__move_namespace(index, 0)
 
-                # Find if any new pages needs to be inserted
-                new_pages = [p for p in pages if p not in self.loaded[0].pages]
-                if new_pages:
+                if new_pages := [
+                    p for p in pages if p not in self.loaded[0].pages
+                ]:
                     self.__insert_pages(namespace, new_pages)
                 else:
                     # No new pages, just switch
@@ -350,15 +348,14 @@ class Enclosure:
         index = self.__find_namespace(namespace)
         if index is None:
             return
-        else:
-            LOG.debug("Removing namespace {} at {}".format(namespace, index))
-            self.send({"type": "mycroft.session.list.remove",
-                       "namespace": "mycroft.system.active_skills",
-                       "position": index,
-                       "items_number": 1
-                       })
-            # Remove namespace from loaded namespaces
-            self.loaded.pop(index)
+        LOG.debug(f"Removing namespace {namespace} at {index}")
+        self.send({"type": "mycroft.session.list.remove",
+                   "namespace": "mycroft.system.active_skills",
+                   "position": index,
+                   "items_number": 1
+                   })
+        # Remove namespace from loaded namespaces
+        self.loaded.pop(index)
 
     def remove_pages(self, namespace, pages):
         """ Remove the listed pages from the provided namespace.
@@ -371,15 +368,14 @@ class Enclosure:
             index = self.__find_namespace(namespace)
             if index is None:
                 return
-            else:
-                # Remove any pages that doesn't exist in the namespace
-                pages = [p for p in pages if p in self.loaded[index].pages]
-                # Make sure to remove pages from the back
-                indexes = [self.loaded[index].pages.index(p) for p in pages]
-                indexes = sorted(indexes)
-                indexes.reverse()
-                for page_index in indexes:
-                    self.__remove_page(namespace, page_index)
+            # Remove any pages that doesn't exist in the namespace
+            pages = [p for p in pages if p in self.loaded[index].pages]
+            # Make sure to remove pages from the back
+            indexes = [self.loaded[index].pages.index(p) for p in pages]
+            indexes = sorted(indexes)
+            indexes.reverse()
+            for page_index in indexes:
+                self.__remove_page(namespace, page_index)
         except Exception as e:
             LOG.exception(repr(e))
 
@@ -399,13 +395,9 @@ class Enclosure:
         LOG.debug("on_gui_client_connected")
         gui_id = message.data.get("gui_id")
 
-        # Spin up a new communication socket for this GUI
-        if gui_id in self.GUIs:
-            # TODO: Close it?
-            pass
         self.GUIs[gui_id] = GUIConnection(gui_id, self.global_config,
                                           self.callback_disconnect, self)
-        LOG.debug("Heard announcement from gui_id: {}".format(gui_id))
+        LOG.debug(f"Heard announcement from gui_id: {gui_id}")
 
         # Announce connection, the GUI should connect on it soon
         self.bus.emit(Message("mycroft.gui.port",
@@ -416,7 +408,7 @@ class Enclosure:
         LOG.info("Disconnecting!")
         # TODO: Whatever is needed to kill the websocket instance
         LOG.info(self.GUIs.keys())
-        LOG.info('deleting: {}'.format(gui_id))
+        LOG.info(f'deleting: {gui_id}')
         if gui_id in self.GUIs:
             del self.GUIs[gui_id]
         else:
@@ -512,15 +504,14 @@ class GUIConnection:
                 self.webapp.gui = self
                 self.webapp.listen(self.port, host)
             except Exception as e:
-                LOG.debug('Error: {}'.format(repr(e)))
+                LOG.debug(f'Error: {repr(e)}')
                 continue
             break
         # Can't run two IOLoop's in the same process
         if not GUIConnection.server_thread:
             GUIConnection.server_thread = create_daemon(
                 ioloop.IOLoop.instance().start)
-        LOG.debug('IOLoop started @ '
-                  'ws://{}:{}{}'.format(host, self.port, route))
+        LOG.debug(f'IOLoop started @ ws://{host}:{self.port}{route}')
 
     def on_connection_opened(self, socket_handler):
         LOG.debug("on_connection_opened")
@@ -529,8 +520,7 @@ class GUIConnection:
 
     def synchronize(self):
         """ Upload namespaces, pages and data. """
-        namespace_pos = 0
-        for namespace, pages in self.enclosure.loaded:
+        for namespace_pos, (namespace, pages) in enumerate(self.enclosure.loaded):
             # Insert namespace
             self.socket.send({"type": "mycroft.session.list.insert",
                               "namespace": "mycroft.system.active_skills",
@@ -551,13 +541,11 @@ class GUIConnection:
                                   "data": {key: data[key]}
                                   })
 
-            namespace_pos += 1
-
     def on_connection_closed(self, socket):
         # Self-destruct (can't reconnect on the same port)
         LOG.debug("on_connection_closed")
         if self.socket:
-            LOG.debug("Server stopped: {}".format(self.socket))
+            LOG.debug(f"Server stopped: {self.socket}")
             # TODO: How to stop the webapp for this socket?
             # self.socket.stop()
             self.socket = None
@@ -573,11 +561,11 @@ class GUIWebsocketHandler(WebSocketHandler):
         self.application.gui.on_connection_opened(self)
 
     def on_message(self, message):
-        LOG.debug("Received: {}".format(message))
+        LOG.debug(f"Received: {message}")
         msg = json.loads(message)
-        if (msg.get('type') == "mycroft.events.triggered" and
-                (msg.get('event_name') == 'page_gained_focus' or
-                    msg.get('event_name') == 'system.gui.user.interaction')):
+        if msg.get('type') == "mycroft.events.triggered" and msg.get(
+            'event_name'
+        ) in ['page_gained_focus', 'system.gui.user.interaction']:
             # System event, a page was changed
             msg_type = 'gui.page_interaction'
             msg_data = {
@@ -586,12 +574,12 @@ class GUIWebsocketHandler(WebSocketHandler):
             }
         elif msg.get('type') == "mycroft.events.triggered":
             # A normal event was triggered
-            msg_type = '{}.{}'.format(msg['namespace'], msg['event_name'])
+            msg_type = f"{msg['namespace']}.{msg['event_name']}"
             msg_data = msg['parameters']
 
         elif msg.get('type') == 'mycroft.session.set':
             # A value was changed send it back to the skill
-            msg_type = '{}.{}'.format(msg['namespace'], 'set')
+            msg_type = f"{msg['namespace']}.set"
             msg_data = msg['data']
 
         message = Message(msg_type, msg_data)
@@ -606,7 +594,7 @@ class GUIWebsocketHandler(WebSocketHandler):
         if isinstance(message, Message):
             self.write_message(message.serialize())
         else:
-            LOG.info('message: {}'.format(message))
+            LOG.info(f'message: {message}')
             self.write_message(str(message))
 
     def send(self, data):

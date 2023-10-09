@@ -104,7 +104,7 @@ def isFractional_es(input_str):
 
     """
     if input_str.endswith('s', -1):
-        input_str = input_str[:len(input_str) - 1]  # e.g. "fifths"
+        input_str = input_str[:-1]
 
     aFrac = ["medio", "media", "tercio", "cuarto", "cuarta", "quinto",
              "quinta", "sexto", "sexta", u"séptimo", u"séptima", "octavo",
@@ -113,17 +113,15 @@ def isFractional_es(input_str):
 
     if input_str.lower() in aFrac:
         return 1.0 / (aFrac.index(input_str) + 2)
-    if (input_str == "cuarto" or input_str == "cuarta"):
+    if input_str in ["cuarto", "cuarta"]:
         return 1.0 / 4
-    if (input_str == u"vigésimo" or input_str == u"vigésima"):
+    if input_str in [u"vigésimo", u"vigésima"]:
         return 1.0 / 20
-    if (input_str == u"trigésimo" or input_str == u"trigésima"):
+    if input_str in [u"trigésimo", u"trigésima"]:
         return 1.0 / 30
-    if (input_str == u"centésimo" or input_str == u"centésima"):
+    if input_str in [u"centésimo", u"centésima"]:
         return 1.0 / 100
-    if (input_str == u"milésimo" or input_str == u"milésima"):
-        return 1.0 / 1000
-    return False
+    return 1.0 / 1000 if input_str in [u"milésimo", u"milésima"] else False
 
 
 def extractnumber_es(text):
@@ -192,17 +190,13 @@ def extractnumber_es(text):
                 count += 1
                 continue
             newWords = aWords[count + 2:]
-            newText = ""
-            for word in newWords:
-                newText += word + " "
-
-            afterAndVal = extractnumber_es(newText[:-1])
-            if afterAndVal:
+            newText = "".join(f"{word} " for word in newWords)
+            if afterAndVal := extractnumber_es(newText[:-1]):
                 if result < afterAndVal or result < 20:
                     while afterAndVal > 1:
                         afterAndVal = afterAndVal / 10.0
                     for word in newWords:
-                        if word == "cero" or word == "0":
+                        if word in ["cero", "0"]:
                             zeros += 1
                         else:
                             break
@@ -213,11 +207,8 @@ def extractnumber_es(text):
         elif next_next_word is not None:
             if next_next_word in ands:
                 newWords = aWords[count + 3:]
-                newText = ""
-                for word in newWords:
-                    newText += word + " "
-                afterAndVal = extractnumber_es(newText[:-1])
-                if afterAndVal:
+                newText = "".join(f"{word} " for word in newWords)
+                if afterAndVal := extractnumber_es(newText[:-1]):
                     if result is None:
                         result = 0
                     result += afterAndVal
@@ -227,17 +218,15 @@ def extractnumber_es(text):
         if next_word in decimals:
             zeros = 0
             newWords = aWords[count + 2:]
-            newText = ""
+            newText = "".join(f"{word} " for word in newWords)
             for word in newWords:
-                newText += word + " "
-            for word in newWords:
-                if word == "cero" or word == "0":
+                if word in ["cero", "0"]:
                     zeros += 1
                 else:
                     break
             afterDotVal = str(extractnumber_es(newText[:-1]))
             afterDotVal = zeros * "0" + afterDotVal
-            result = float(str(result) + "." + afterDotVal)
+            result = float(f"{str(result)}.{afterDotVal}")
             break
         count += 1
 
@@ -259,9 +248,7 @@ def extractnumber_es(text):
 
 def es_number_parse(words, i):
     def es_cte(i, s):
-        if i < len(words) and s == words[i]:
-            return s, i + 1
-        return None
+        return (s, i + 1) if i < len(words) and s == words[i] else None
 
     def es_number_word(i, mi, ma):
         if i < len(words):
@@ -302,10 +289,7 @@ def es_number_parse(words, i):
 
         # [1-99]
         r1 = es_number_1_99(i)
-        if r1:
-            return r1
-
-        return None
+        return r1 if r1 else None
 
     def es_number(i):
         # check for cero
@@ -347,14 +331,12 @@ def normalize_es(text, remove_articles):
             i += 1
             continue
 
-        # Convert numbers into digits
-        r = es_number_parse(words, i)
-        if r:
+        if r := es_number_parse(words, i):
             v, i = r
-            normalized += " " + str(v)
+            normalized += f" {str(v)}"
             continue
 
-        normalized += " " + word
+        normalized += f" {word}"
         i += 1
 
     return normalized[1:]  # strip the initial space

@@ -44,4 +44,4 @@ class EnclosureArduino:
         times = 1
         if event and event.data:
             times = event.data.get("times", times)
-        self.writer.write("system.blink=" + str(times))
+        self.writer.write(f"system.blink={str(times)}")

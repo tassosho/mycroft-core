@@ -83,13 +83,15 @@ class Api:
         LOG.debug('Refreshing token')
         if identity_lock.acquire(blocking=False):
             try:
-                data = self.send({
-                    "path": "auth/token",
-                    "headers": {
-                        "Authorization": "Bearer " + self.identity.refresh,
-                        "Device": self.identity.uuid
+                data = self.send(
+                    {
+                        "path": "auth/token",
+                        "headers": {
+                            "Authorization": f"Bearer {self.identity.refresh}",
+                            "Device": self.identity.uuid,
+                        },
                     }
-                })
+                )
                 IdentityManager.save(data, lock=False)
                 LOG.debug('Saved credentials')
             except HTTPError as e:
@@ -192,7 +194,7 @@ class Api:
 
     def add_authorization(self, headers):
         if not headers.__contains__("Authorization"):
-            headers["Authorization"] = "Bearer " + self.identity.access
+            headers["Authorization"] = f"Bearer {self.identity.access}"
 
     def build_data(self, params):
         return params.get("data")
@@ -217,7 +219,7 @@ class Api:
     def build_url(self, params):
         path = params.get("path", "")
         version = params.get("version", self.version)
-        return self.url + "/" + version + "/" + path
+        return f"{self.url}/{version}/{path}"
 
 
 class DeviceApi(Api):
@@ -228,9 +230,7 @@ class DeviceApi(Api):
 
     def get_code(self, state):
         IdentityManager.update()
-        return self.request({
-            "path": "/code?state=" + state
-        })
+        return self.request({"path": f"/code?state={state}"})
 
     def activate(self, state, token):
         version = VersionManager.get()
@@ -269,34 +269,36 @@ class DeviceApi(Api):
             platform = config.get("enclosure").get("platform", "unknown")
             platform_build = config.get("enclosure").get("platform_build", "")
 
-        return self.request({
-            "method": "PATCH",
-            "path": "/" + UUID,
-            "json": {"coreVersion": version.get("coreVersion"),
-                     "platform": platform,
-                     "platform_build": platform_build,
-                     "enclosureVersion": version.get("enclosureVersion")}
-        })
+        return self.request(
+            {
+                "method": "PATCH",
+                "path": f"/{UUID}",
+                "json": {
+                    "coreVersion": version.get("coreVersion"),
+                    "platform": platform,
+                    "platform_build": platform_build,
+                    "enclosureVersion": version.get("enclosureVersion"),
+                },
+            }
+        )
 
     def send_email(self, title, body, sender):
-        return self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/message",
-            "json": {"title": title, "body": body, "sender": sender}
-        })
+        return self.request(
+            {
+                "method": "PUT",
+                "path": f"/{UUID}/message",
+                "json": {"title": title, "body": body, "sender": sender},
+            }
+        )
 
     def report_metric(self, name, data):
-        return self.request({
-            "method": "POST",
-            "path": "/" + UUID + "/metric/" + name,
-            "json": data
-        })
+        return self.request(
+            {"method": "POST", "path": f"/{UUID}/metric/{name}", "json": data}
+        )
 
     def get(self):
         """ Retrieve all device information from the web backend """
-        return self.request({
-            "path": "/" + UUID
-        })
+        return self.request({"path": f"/{UUID}"})
 
     def get_settings(self):
         """ Retrieve device settings information from the web backend
@@ -304,9 +306,7 @@ class DeviceApi(Api):
         Returns:
             str: JSON string with user configuration information.
         """
-        return self.request({
-            "path": "/" + UUID + "/setting"
-        })
+        return self.request({"path": f"/{UUID}/setting"})
 
     def get_location(self):
         """ Retrieve device location information from the web backend
@@ -314,9 +314,7 @@ class DeviceApi(Api):
         Returns:
             str: JSON string with user location.
         """
-        return self.request({
-            "path": "/" + UUID + "/location"
-        })
+        return self.request({"path": f"/{UUID}/location"})
 
     def get_subscription(self):
         """
@@ -325,8 +323,7 @@ class DeviceApi(Api):
 
             Returns: dictionary with subscription information
         """
-        return self.request({
-            'path': '/' + UUID + '/subscription'})
+        return self.request({'path': f'/{UUID}/subscription'})
 
     @property
     def is_subscriber(self):
@@ -343,9 +340,8 @@ class DeviceApi(Api):
     def get_subscriber_voice_url(self, voice=None):
         self.check_token()
         archs = {'x86_64': 'x86_64', 'armv7l': 'arm', 'aarch64': 'arm'}
-        arch = archs.get(get_arch())
-        if arch:
-            path = '/' + UUID + '/voice?arch=' + arch
+        if arch := archs.get(get_arch()):
+            path = f'/{UUID}/voice?arch={arch}'
             return self.request({'path': path})['link']
 
     def get_oauth_token(self, dev_cred):
@@ -358,17 +354,13 @@ class DeviceApi(Api):
             Returns:
                 json string containing token and additional information
         """
-        return self.request({
-            "method": "GET",
-            "path": "/" + UUID + "/token/" + str(dev_cred)
-        })
+        return self.request(
+            {"method": "GET", "path": f"/{UUID}/token/{str(dev_cred)}"}
+        )
 
     def get_skill_settings(self):
         """Get the remote skill settings for all skills on this device."""
-        return self.request({
-            "method": "GET",
-            "path": "/" + UUID + "/skill/settings",
-        })
+        return self.request({"method": "GET", "path": f"/{UUID}/skill/settings"})
 
     def upload_skill_metadata(self, settings_meta):
         """Upload skill metadata.
@@ -376,11 +368,13 @@ class DeviceApi(Api):
         Arguments:
             settings_meta (dict): skill info and settings in JSON format
         """
-        return self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/settingsMeta",
-            "json": settings_meta
-        })
+        return self.request(
+            {
+                "method": "PUT",
+                "path": f"/{UUID}/settingsMeta",
+                "json": settings_meta,
+            }
+        )
 
     def upload_skills_data(self, data):
         """ Upload skills.json file. This file contains a manifest of installed
@@ -416,13 +410,10 @@ class DeviceApi(Api):
 
             # Finalize skill_gid with uuid if needed
             s['skill_gid'] = s.get('skill_gid', '').replace(
-                '@|', '@{}|'.format(self.identity.uuid))
+                '@|', f'@{self.identity.uuid}|'
+            )
 
-        self.request({
-            "method": "PUT",
-            "path": "/" + UUID + "/skillJson",
-            "json": to_send
-            })
+        self.request({"method": "PUT", "path": f"/{UUID}/skillJson", "json": to_send})
 
 
 class STTApi(Api):
@@ -504,15 +495,14 @@ def check_remote_pairing(ignore_errors):
     except Exception as e:
         error = e
 
-    LOG.warning('Could not get device info: {}'.format(repr(error)))
+    LOG.warning(f'Could not get device info: {repr(error)}')
 
     if ignore_errors:
         return False
 
-    if isinstance(error, HTTPError):
-        if connected():
-            raise BackendDown from error
-        else:
-            raise InternetDown from error
-    else:
+    if not isinstance(error, HTTPError):
         raise error
+    if connected():
+        raise BackendDown from error
+    else:
+        raise InternetDown from error

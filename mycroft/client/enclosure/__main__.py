@@ -33,7 +33,7 @@ def main():
         from mycroft.client.enclosure.mark2 import EnclosureMark2
         enclosure = EnclosureMark2()
     else:
-        LOG.debug("Creating generic enclosure, platform='{}'".format(platform))
+        LOG.debug(f"Creating generic enclosure, platform='{platform}'")
 
         # TODO: Mechanism to load from elsewhere.  E.g. read a script path from
         # the mycroft.conf, then load/launch that script.

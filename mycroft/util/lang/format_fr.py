@@ -89,54 +89,39 @@ def nice_number_fr(number, speech, denominators):
     num = 0
     den = 0
 
-    result = convert_to_mixed_fraction(number, denominators)
-
-    if not result:
-        # Give up, just represent as a 3 decimal number
-        whole = round(number, 3)
-    else:
+    if result := convert_to_mixed_fraction(number, denominators):
         whole, num, den = result
 
-    if not speech:
-        if num == 0:
-            strNumber = '{:,}'.format(whole)
-            strNumber = strNumber.replace(",", " ")
-            strNumber = strNumber.replace(".", ",")
-            return strNumber
-        else:
-            return '{} {}/{}'.format(whole, num, den)
     else:
+        # Give up, just represent as a 3 decimal number
+        whole = round(number, 3)
+    if speech:
         if num == 0:
             # if the number is not a fraction, nothing to do
             strNumber = str(whole)
-            strNumber = strNumber.replace(".", ",")
-            return strNumber
+            return strNumber.replace(".", ",")
         den_str = FRACTION_STRING_FR[den]
         # if it is not an integer
         if whole == 0:
             # if there is no whole number
-            if num == 1:
-                # if numerator is 1, return "un demi", for example
-                strNumber = 'un {}'.format(den_str)
-            else:
-                # else return "quatre tiers", for example
-                strNumber = '{} {}'.format(num, den_str)
+            strNumber = f'un {den_str}' if num == 1 else f'{num} {den_str}'
         elif num == 1:
             # if there is a whole number and numerator is 1
-            if den == 2:
-                # if denominator is 2, return "1 et demi", for example
-                strNumber = '{} et {}'.format(whole, den_str)
-            else:
-                # else return "1 et 1 tiers", for example
-                strNumber = '{} et 1 {}'.format(whole, den_str)
+            strNumber = f'{whole} et {den_str}' if den == 2 else f'{whole} et 1 {den_str}'
         else:
             # else return "2 et 3 quart", for example
-            strNumber = '{} et {} {}'.format(whole, num, den_str)
+            strNumber = f'{whole} et {num} {den_str}'
         if num > 1 and den != 3:
             # if the numerator is greater than 1 and the denominator
             # is not 3 ("tiers"), add an s for plural
             strNumber += 's'
 
+    elif num == 0:
+        strNumber = '{:,}'.format(whole)
+        strNumber = strNumber.replace(",", " ")
+        return strNumber.replace(".", ",")
+    else:
+        return f'{whole} {num}/{den}'
     return strNumber
 
 
@@ -156,47 +141,42 @@ def pronounce_number_fr(num, places=2):
         # TODO: Support for numbers over 100
         return str(num)
 
-    result = ""
-    if num < 0:
-        result = "moins "
+    result = "moins " if num < 0 else ""
     num = abs(num)
 
     if num > 16:
         tens = int(num-int(num) % 10)
         ones = int(num-tens)
-        if ones != 0:
-            if tens > 10 and tens <= 60 and int(num-tens) == 1:
-                result += NUM_STRING_FR[tens] + "-et-" + NUM_STRING_FR[ones]
-            elif num == 71:
-                result += "soixante-et-onze"
-            elif tens == 70:
-                result += NUM_STRING_FR[60] + "-"
-                if ones < 7:
-                    result += NUM_STRING_FR[10 + ones]
-                else:
-                    result += NUM_STRING_FR[10] + "-" + NUM_STRING_FR[ones]
-            elif tens == 90:
-                result += NUM_STRING_FR[80] + "-"
-                if ones < 7:
-                    result += NUM_STRING_FR[10 + ones]
-                else:
-                    result += NUM_STRING_FR[10] + "-" + NUM_STRING_FR[ones]
+        if ones == 0:
+            result += "quatre-vingts" if num == 80 else NUM_STRING_FR[tens]
+        elif tens > 10 and tens <= 60 and int(num-tens) == 1:
+            result += f"{NUM_STRING_FR[tens]}-et-{NUM_STRING_FR[ones]}"
+        elif num == 71:
+            result += "soixante-et-onze"
+        elif tens == 70:
+            result += f"{NUM_STRING_FR[60]}-"
+            result += (
+                NUM_STRING_FR[10 + ones]
+                if ones < 7
+                else f"{NUM_STRING_FR[10]}-{NUM_STRING_FR[ones]}"
+            )
+        elif tens == 90:
+            result += f"{NUM_STRING_FR[80]}-"
+            if ones < 7:
+                result += NUM_STRING_FR[10 + ones]
             else:
-                result += NUM_STRING_FR[tens] + "-" + NUM_STRING_FR[ones]
+                result += f"{NUM_STRING_FR[10]}-{NUM_STRING_FR[ones]}"
         else:
-            if num == 80:
-                result += "quatre-vingts"
-            else:
-                result += NUM_STRING_FR[tens]
+            result += f"{NUM_STRING_FR[tens]}-{NUM_STRING_FR[ones]}"
     else:
         result += NUM_STRING_FR[int(num)]
 
     # Deal with decimal part
-    if not num == int(num) and places > 0:
+    if num != int(num) and places > 0:
         result += " virgule"
         place = 10
         while int(num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_FR[int(num*place) % 10]
+            result += f" {NUM_STRING_FR[int(num * place) % 10]}"
             place *= 10
             places -= 1
     return result
@@ -221,12 +201,7 @@ def nice_time_fr(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -245,10 +220,10 @@ def nice_time_fr(dt, speech=True, use_24hour=False, use_ampm=False):
         elif dt.hour == 1:
             speak += "une heure"
         else:
-            speak += pronounce_number_fr(dt.hour) + " heures"
+            speak += f"{pronounce_number_fr(dt.hour)} heures"
 
         if dt.minute != 0:
-            speak += " " + pronounce_number_fr(dt.minute)
+            speak += f" {pronounce_number_fr(dt.minute)}"
 
     else:
         # Prepare for "trois heures moins le quart"
@@ -275,12 +250,12 @@ def nice_time_fr(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += "minuit"
         elif hour == 12:
             speak += "midi"
-        elif hour == 1 or hour == 13:
+        elif hour in [1, 13]:
             speak += "une heure"
         elif hour < 13:
-            speak = pronounce_number_fr(hour) + " heures"
+            speak = f"{pronounce_number_fr(hour)} heures"
         else:
-            speak = pronounce_number_fr(hour-12) + " heures"
+            speak = f"{pronounce_number_fr(hour - 12)} heures"
 
         if minute != 0:
             if minute == 15:
@@ -290,7 +265,7 @@ def nice_time_fr(dt, speech=True, use_24hour=False, use_ampm=False):
             elif minute == -15:
                 speak += " moins le quart"
             else:
-                speak += " " + pronounce_number_fr(minute)
+                speak += f" {pronounce_number_fr(minute)}"
 
         if use_ampm:
             if hour > 17:

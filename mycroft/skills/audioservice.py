@@ -29,15 +29,9 @@ def ensure_uri(s):
             if s is uri, s is returned otherwise file:// is prepended
     """
     if isinstance(s, str):
-        if '://' not in s:
-            return 'file://' + abspath(s)
-        else:
-            return s
+        return f'file://{abspath(s)}' if '://' not in s else s
     elif isinstance(s, (tuple, list)):
-        if '://' not in s[0]:
-            return 'file://' + abspath(s[0]), s[1]
-        else:
-            return s
+        return (f'file://{abspath(s[0])}', s[1]) if '://' not in s[0] else s
     else:
         raise ValueError('Invalid track')
 

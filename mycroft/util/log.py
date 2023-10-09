@@ -91,7 +91,7 @@ class LOG:
                 merge_dict(config,
                            load_commented_json(conf) if isfile(conf) else {})
             except Exception as e:
-                print('couldn\'t load {}: {}'.format(conf, str(e)))
+                print(f"couldn\'t load {conf}: {str(e)}")
 
         cls.level = logging.getLevelName(config.get('log_level', 'INFO'))
         log_message_format = (
@@ -138,7 +138,7 @@ class LOG:
                 record = stack[2]
                 mod = inspect.getmodule(record[0])
                 module_name = mod.__name__ if mod else ''
-                name = module_name + ':' + record[3] + ':' + str(record[2])
+                name = f'{module_name}:{record[3]}:{str(record[2])}'
             except Exception:
                 # The location couldn't be determined
                 name = 'Mycroft'

@@ -79,9 +79,7 @@ def extract_numbers_generic(text, pronounce_handler, extract_handler,
         prev = to_parse
         num_txt = pronounce_handler(extract)
         extract = str(extract)
-        if extract.endswith(".0"):
-            extract = extract[:-2]
-
+        extract = extract.removesuffix(".0")
         # handle duplicate occurences, replace last one only
         def replace_right(source, target, replacement, replacements=None):
             return replacement.join(source.rsplit(target, replacements))

@@ -93,13 +93,13 @@ class PocketsphinxHotWord(HotWordEngine):
         phoneme_groups = phonemes.split('.')
         with os.fdopen(fd, 'w') as f:
             for word, phoneme in zip(words, phoneme_groups):
-                f.write(word + ' ' + phoneme + '\n')
+                f.write(f'{word} {phoneme}' + '\n')
         return file_name
 
     def create_config(self, dict_name, config):
         model_file = join(RECOGNIZER_DIR, 'model', self.lang, 'hmm')
         if not exists(model_file):
-            LOG.error('PocketSphinx model not found at ' + str(model_file))
+            LOG.error(f'PocketSphinx model not found at {str(model_file)}')
         config.set_string('-hmm', model_file)
         config.set_string('-dict', dict_name)
         config.set_string('-keyphrase', self.key_phrase)
@@ -181,8 +181,7 @@ class PreciseHotword(HotWordEngine):
             except TriggerReload:
                 raise
             except Exception as e:
-                LOG.error(
-                    'Precise could not be downloaded({})'.format(repr(e)))
+                LOG.error(f'Precise could not be downloaded({repr(e)})')
                 if exists(self.install_destination):
                     precise_exe = self.install_destination
                 else:
@@ -281,13 +280,10 @@ class SnowboyHotWord(HotWordEngine):
         # Hotword module config
         module = self.config.get("module")
         if module != "snowboy":
-            LOG.warning(module + " module does not match with Hotword class "
-                                 "snowboy")
+            LOG.warning(f"{module} module does not match with Hotword class snowboy")
         # Hotword params
         models = self.config.get("models", {})
-        paths = []
-        for key in models:
-            paths.append(models[key])
+        paths = [models[key] for key in models]
         sensitivity = self.config.get("sensitivity", 0.5)
         self.snowboy = HotwordDetector(paths,
                                        sensitivity=[sensitivity] * len(paths))

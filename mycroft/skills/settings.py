@@ -77,9 +77,7 @@ def get_local_settings(skill_dir, skill_name) -> dict:
     settings_path = Path(skill_dir).joinpath('settings.json')
     LOG.info(settings_path)
     if settings_path.exists():
-        with open(str(settings_path)) as settings_file:
-            settings_file_content = settings_file.read()
-        if settings_file_content:
+        if settings_file_content := Path(str(settings_path)).read_text():
             try:
                 skill_settings = json.loads(settings_file_content)
             # TODO change to check for JSONDecodeError in 19.08
@@ -101,13 +99,9 @@ def save_settings(skill_dir, skill_settings):
         try:
             json.dump(settings_to_save, settings_file)
         except Exception:
-            LOG.exception(
-                'error saving skill settings to ' + str(settings_path)
-            )
+            LOG.exception(f'error saving skill settings to {str(settings_path)}')
         else:
-            LOG.info(
-                'Skill settings successfully saved to ' + str(settings_path)
-            )
+            LOG.info(f'Skill settings successfully saved to {str(settings_path)}')
 
 
 def get_display_name(skill_name: str):
@@ -192,10 +186,7 @@ class SettingsMetaUploader:
             }
             skill = skills[str(self.skill_directory)]
             # If modified prepend the device uuid
-            self._skill_gid = skill.skill_gid.replace(
-                '@|',
-                '@{}|'.format(self.api.identity.uuid)
-            )
+            self._skill_gid = skill.skill_gid.replace('@|', f'@{self.api.identity.uuid}|')
 
             return self._skill_gid
         else:
@@ -234,15 +225,13 @@ class SettingsMetaUploader:
         if is_paired():
             self.api = DeviceApi()
             if self.api.identity.uuid:
-                settings_meta_file_exists = (
-                    self.json_path.is_file() or
-                    self.yaml_path.is_file()
-                )
-                if settings_meta_file_exists:
+                if settings_meta_file_exists := (
+                    self.json_path.is_file() or self.yaml_path.is_file()
+                ):
                     self._load_settings_meta_file()
 
                 self._update_settings_meta()
-                LOG.debug('Uploading settings meta for ' + self.skill_gid)
+                LOG.debug(f'Uploading settings meta for {self.skill_gid}')
                 synced = self._issue_api_call()
             else:
                 LOG.debug('settingsmeta.json not uploaded - no identity')
@@ -306,8 +295,7 @@ class SettingsMetaUploader:
         try:
             self.api.upload_skill_metadata(self.settings_meta)
         except Exception:
-            LOG.exception('Failed to upload skill settings meta '
-                          'for {}'.format(self.skill_gid))
+            LOG.exception(f'Failed to upload skill settings meta for {self.skill_gid}')
             success = False
         else:
             success = True
@@ -343,8 +331,7 @@ class SkillSettingsDownloader:
     def download(self):
         """Download the settings stored on the backend and check for changes"""
         if is_paired():
-            download_success = self._get_remote_settings()
-            if download_success:
+            if download_success := self._get_remote_settings():
                 self.settings_changed = (
                     self.last_download_result != self.remote_settings
                 )

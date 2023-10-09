@@ -208,7 +208,7 @@ class AudioConsumer(Thread):
             text = self.stt.execute(audio)
             if text is not None:
                 text = text.lower().strip()
-                LOG.debug("STT: " + text)
+                LOG.debug(f"STT: {text}")
             else:
                 send_unknown_intent()
                 LOG.info('no words were transcribed')
@@ -220,7 +220,7 @@ class AudioConsumer(Thread):
 
             self.emitter.emit("recognizer_loop:no_internet")
         except RequestException as e:
-            LOG.error(e.__class__.__name__ + ': ' + str(e))
+            LOG.error(f'{e.__class__.__name__}: {str(e)}')
         except Exception as e:
             send_unknown_intent()
             LOG.error(e)
@@ -285,7 +285,7 @@ class RecognizerLoop(EventEmitter):
         if not device_index and device_name:
             device_index = find_input_device(device_name)
 
-        LOG.debug('Using microphone (None = default): '+str(device_index))
+        LOG.debug(f'Using microphone (None = default): {str(device_index)}')
 
         self.microphone = MutableMicrophone(device_index, rate,
                                             mute=self.mute_calls > 0)
@@ -334,9 +334,7 @@ class RecognizerLoop(EventEmitter):
         self.state.running = True
         stt = STTFactory.create()
         queue = Queue()
-        stream_handler = None
-        if stt.can_stream:
-            stream_handler = AudioStreamHandler(queue)
+        stream_handler = AudioStreamHandler(queue) if stt.can_stream else None
         self.producer = AudioProducer(self.state, queue, self.microphone,
                                       self.responsive_recognizer, self,
                                       stream_handler)
@@ -381,10 +379,7 @@ class RecognizerLoop(EventEmitter):
         self.unmute()
 
     def is_muted(self):
-        if self.microphone:
-            return self.microphone.is_muted()
-        else:
-            return True  # consider 'no mic' muted
+        return self.microphone.is_muted() if self.microphone else True
 
     def sleep(self):
         self.state.sleeping = True

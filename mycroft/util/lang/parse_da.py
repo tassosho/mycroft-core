@@ -104,18 +104,12 @@ def extractnumber_da(text):
             val = isFractional_da(word)
         elif isOrdinal_da(word):
             val = isOrdinal_da(word)
-        else:
-            if word in da_numbers:
-                val = da_numbers[word]
-                if count < (len(aWords) - 1):
-                    wordNext = aWords[count + 1]
-                else:
-                    wordNext = ""
-                valNext = isFractional_da(wordNext)
-
-                if valNext:
-                    val = val * valNext
-                    aWords[count + 1] = ""
+        elif word in da_numbers:
+            val = da_numbers[word]
+            wordNext = aWords[count + 1] if count < (len(aWords) - 1) else ""
+            if valNext := isFractional_da(wordNext):
+                val = val * valNext
+                aWords[count + 1] = ""
 
         if not val:
             # look for fractions like "2/3"
@@ -152,10 +146,7 @@ def extractnumber_da(text):
 
         break
 
-    if not val:
-        return False
-
-    return val
+    return False if not val else val
 
 
 def extract_datetime_da(string, currentDate, default_time):

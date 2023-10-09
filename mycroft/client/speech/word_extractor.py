@@ -23,7 +23,7 @@ class WordExtractor:
         self.audio = audio
         self.recognizer = recognizer
         self.audio_size = len(self.audio.frame_data)
-        self.delta = int(self.audio_size / 2)
+        self.delta = self.audio_size // 2
         self.begin = 0
         self.end = self.audio_size
         self.precision = int(self.audio_size * self.PRECISION_RATE)
@@ -59,7 +59,7 @@ class WordExtractor:
         return '\0' * int(seconds * sample_rate * sample_width)
 
     def get_audio_data_before(self):
-        byte_data = self.audio.frame_data[0:self.begin] + self.silence_data
+        byte_data = self.audio.frame_data[:self.begin] + self.silence_data
         return AudioData(byte_data, self.audio.sample_rate,
                          self.audio.sample_width)
 

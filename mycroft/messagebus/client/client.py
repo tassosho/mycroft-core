@@ -78,14 +78,14 @@ class MessageBusClient:
         if isinstance(error, WebSocketConnectionClosedException):
             LOG.warning('Could not send message because connection has closed')
         else:
-            LOG.exception('=== ' + repr(error) + ' ===')
+            LOG.exception(f'=== {repr(error)} ===')
 
         try:
             self.emitter.emit('error', error)
             if self.client.keep_running:
                 self.client.close()
         except Exception as e:
-            LOG.error('Exception closing websocket: ' + repr(e))
+            LOG.error(f'Exception closing websocket: {repr(e)}')
 
         LOG.warning(
             "Message Bus Client will reconnect in %d seconds." % self.retry
@@ -117,8 +117,9 @@ class MessageBusClient:
             else:
                 self.client.send(json.dumps(message.__dict__))
         except WebSocketConnectionClosedException:
-            LOG.warning('Could not send {} message because connection '
-                        'has been closed'.format(message.msg_type))
+            LOG.warning(
+                f'Could not send {message.msg_type} message because connection has been closed'
+            )
 
     def wait_for_response(self, message, reply_type=None, timeout=None):
         """Send a message and wait for a response.
@@ -138,12 +139,12 @@ class MessageBusClient:
             response.append(message)
 
         # Setup response handler
-        self.once(reply_type or message.msg_type + '.response', handler)
+        self.once(reply_type or f'{message.msg_type}.response', handler)
         # Send request
         self.emit(message)
         # Wait for response
         start_time = time.monotonic()
-        while len(response) == 0:
+        while not response:
             time.sleep(0.2)
             if time.monotonic() - start_time > (timeout or 3.0):
                 try:
@@ -166,28 +167,27 @@ class MessageBusClient:
     def remove(self, event_name, func):
         try:
             if event_name in self.emitter._events:
-                LOG.debug("Removing found '"+str(event_name)+"'")
+                LOG.debug(f"Removing found '{str(event_name)}'")
             else:
-                LOG.debug("Not able to find '"+str(event_name)+"'")
+                LOG.debug(f"Not able to find '{str(event_name)}'")
             self.emitter.remove_listener(event_name, func)
         except ValueError:
-            LOG.warning('Failed to remove event {}: {}'.format(event_name,
-                                                               str(func)))
+            LOG.warning(f'Failed to remove event {event_name}: {str(func)}')
             for line in traceback.format_stack():
                 LOG.warning(line.strip())
 
             if event_name in self.emitter._events:
-                LOG.debug("Removing found '"+str(event_name)+"'")
+                LOG.debug(f"Removing found '{str(event_name)}'")
             else:
-                LOG.debug("Not able to find '"+str(event_name)+"'")
-            LOG.warning("Existing events: " + str(self.emitter._events))
+                LOG.debug(f"Not able to find '{str(event_name)}'")
+            LOG.warning(f"Existing events: {str(self.emitter._events)}")
             for evt in self.emitter._events:
-                LOG.warning("   "+str(evt))
-                LOG.warning("       "+str(self.emitter._events[evt]))
+                LOG.warning(f"   {str(evt)}")
+                LOG.warning(f"       {str(self.emitter._events[evt])}")
             if event_name in self.emitter._events:
-                LOG.debug("Removing found '"+str(event_name)+"'")
+                LOG.debug(f"Removing found '{str(event_name)}'")
             else:
-                LOG.debug("Not able to find '"+str(event_name)+"'")
+                LOG.debug(f"Not able to find '{str(event_name)}'")
             LOG.warning('----- End dump -----')
 
     def remove_all_listeners(self, event_name):

@@ -36,7 +36,7 @@ def load_message_bus_config(**overrides):
     try:
         websocket_configs = config['websocket']
     except KeyError as ke:
-        LOG.error('No websocket configs found ({})'.format(repr(ke)))
+        LOG.error(f'No websocket configs found ({repr(ke)})')
         raise
     else:
         mb_config = MessageBusConfig(

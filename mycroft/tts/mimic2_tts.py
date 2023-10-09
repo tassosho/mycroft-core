@@ -96,11 +96,7 @@ def _split_by_punctuation(chunks, puncs):
     Returns:
         list: list with split text
     """
-    if isinstance(chunks, str):
-        out = [chunks]
-    else:
-        out = chunks
-
+    out = [chunks] if isinstance(chunks, str) else chunks
     for punc in puncs:
         splits = []
         for t in out:
@@ -118,10 +114,7 @@ def _add_punctuation(text):
     Mimic2 expects some form of punctuation at the end of a sentence.
     """
     punctuation = ['.', '?', '!', ';']
-    if len(text) >= 1 and text[-1] not in punctuation:
-        return text + '.'
-    else:
-        return text
+    return f'{text}.' if len(text) >= 1 and text[-1] not in punctuation else text
 
 
 def _sentence_chunker(text):
@@ -178,8 +171,7 @@ class Mimic2(TTS):
             cache_handler.main(config['preloaded_cache'])
             LOG.info("Successfully downloaded Pre-loaded cache")
         except Exception as e:
-            LOG.error("Could not get the pre-loaded cache ({})"
-                      .format(repr(e)))
+            LOG.error(f"Could not get the pre-loaded cache ({repr(e)})")
         self.url = config['url']
         self.session = FuturesSession()
 
@@ -202,9 +194,7 @@ class Mimic2(TTS):
             self._save(req.content)
             play_wav(self.filename).communicate()
         else:
-            LOG.error(
-                '%s Http Error: %s for url: %s' %
-                (req.status_code, req.reason, req.url))
+            LOG.error(f'{req.status_code} Http Error: {req.reason} for url: {req.url}')
 
     def _requests(self, sentence):
         """create asynchronous request list
@@ -216,7 +206,7 @@ class Mimic2(TTS):
             list: list of FutureSession objects
         """
         url = self.url + parse.quote(sentence)
-        req_route = url + "&visimes=True"
+        req_route = f"{url}&visimes=True"
         return self.session.get(req_route, timeout=5)
 
     def viseme(self, phonemes):
@@ -230,21 +220,15 @@ class Mimic2(TTS):
         """
         visemes = []
         for pair in phonemes:
-            if pair[0]:
-                phone = pair[0].lower()
-            else:
-                # if phoneme doesn't exist use
-                # this as placeholder since it
-                # is the most common one "3"
-                phone = 'z'
+            phone = pair[0].lower() if pair[0] else 'z'
             vis = VISIMES.get(phone)
             vis_dur = float(pair[1])
             visemes.append((vis, vis_dur))
         return visemes
 
-    def _prepocess_sentence(sentence):
+    def _prepocess_sentence(self):
         """ Split sentence in chunks better suited for mimic2. """
-        return _sentence_chunker(sentence)
+        return _sentence_chunker(self)
 
     def get_tts(self, sentence, wav_file):
         """ Generate (remotely) and play mimic2 WAV audio
@@ -253,7 +237,7 @@ class Mimic2(TTS):
             sentence (str): Phrase to synthesize to audio with mimic2
             wav_file (str): Location to write audio output
         """
-        LOG.debug("Generating Mimic2 TSS for: " + str(sentence))
+        LOG.debug(f"Generating Mimic2 TSS for: {str(sentence)}")
         try:
             req = self._requests(sentence)
             results = req.result().json()
@@ -274,13 +258,13 @@ class Mimic2(TTS):
                 key:        Hash key for the sentence
                 phonemes:   phoneme string to save
         """
-        cache_dir = get_cache_directory("tts/" + self.tts_name)
-        pho_file = os.path.join(cache_dir, key + ".pho")
+        cache_dir = get_cache_directory(f"tts/{self.tts_name}")
+        pho_file = os.path.join(cache_dir, f"{key}.pho")
         try:
             with open(pho_file, "w") as cachefile:
                 cachefile.write(json.dumps(phonemes))
         except Exception:
-            LOG.exception("Failed to write {} to cache".format(pho_file))
+            LOG.exception(f"Failed to write {pho_file} to cache")
 
     def load_phonemes(self, key):
         """
@@ -289,15 +273,16 @@ class Mimic2(TTS):
             Args:
                 Key:    Key identifying phoneme cache
         """
-        pho_file = os.path.join(get_cache_directory("tts/" + self.tts_name),
-                                key + ".pho")
+        pho_file = os.path.join(
+            get_cache_directory(f"tts/{self.tts_name}"), f"{key}.pho"
+        )
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
                     phonemes = json.load(cachefile)
                 return phonemes
             except Exception as e:
-                LOG.error("Failed to read .PHO from cache ({})".format(e))
+                LOG.error(f"Failed to read .PHO from cache ({e})")
         return None
 
 

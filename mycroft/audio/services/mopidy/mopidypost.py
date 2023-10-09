@@ -46,7 +46,7 @@ class Mopidy:
         if filter is None:
             return r.json()['result']
         else:
-            return [l for l in r.json()['result'] if filter + ':' in l['uri']]
+            return [l for l in r.json()['result'] if f'{filter}:' in l['uri']]
 
     def find_album(self, album, filter=None):
         d = copy(_base_dict)
@@ -57,7 +57,7 @@ class Mopidy:
         if filter is None:
             return lst
         else:
-            return [i for sl in lst for i in sl if filter + ':' in i['uri']]
+            return [i for sl in lst for i in sl if f'{filter}:' in i['uri']]
 
     def find_exact(self, uris='null'):
         d = copy(_base_dict)
@@ -71,17 +71,13 @@ class Mopidy:
         d['method'] = 'core.library.browse'
         d['params'] = {'uri': uri}
         r = requests.post(self.url, data=json.dumps(d))
-        if 'result' in r.json():
-            return r.json()['result']
-        else:
-            return None
+        return r.json()['result'] if 'result' in r.json() else None
 
     def clear_list(self, force=False):
         if self.is_playing or force:
             d = copy(_base_dict)
             d['method'] = 'core.tracklist.clear'
-            r = requests.post(self.url, data=json.dumps(d))
-            return r
+            return requests.post(self.url, data=json.dumps(d))
 
     def add_list(self, uri):
         d = copy(_base_dict)
@@ -92,8 +88,7 @@ class Mopidy:
             d['params'] = {'uris': uri}
         else:
             return None
-        r = requests.post(self.url, data=json.dumps(d))
-        return r
+        return requests.post(self.url, data=json.dumps(d))
 
     def play(self):
         self.is_playing = True
@@ -160,10 +155,7 @@ class Mopidy:
         d['method'] = 'core.playlists.get_items'
         d['params'] = {'uri': uri}
         r = requests.post(self.url, data=json.dumps(d))
-        if 'result' in r.json():
-            return [e['uri'] for e in r.json()['result']]
-        else:
-            return None
+        return [e['uri'] for e in r.json()['result']] if 'result' in r.json() else None
 
     def get_tracks(self, uri):
         tracks = self.browse(uri)

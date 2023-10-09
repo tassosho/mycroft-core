@@ -157,7 +157,7 @@ class Lock:  # python 3+ 'class Lock'
         if not os.path.exists(Lock.DIRECTORY):
             os.makedirs(Lock.DIRECTORY)
         with open(self.path, 'w') as L:
-            L.write('{}'.format(self.__pid))
+            L.write(f'{self.__pid}')
 
     #
     # Create the PID file

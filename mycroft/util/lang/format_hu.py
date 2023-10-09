@@ -128,26 +128,21 @@ def nice_number_hu(number, speech, denominators):
     whole, num, den = result
 
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     den_str = FRACTION_STRING_HU[den]
     if whole == 0:
         if num == 1:
             one = 'egy ' if den != 2 else ''
-            return_string = '{}{}'.format(one, den_str)
+            return_string = f'{one}{den_str}'
         else:
-            return_string = '{} {}'.format(num, den_str)
+            return_string = f'{num} {den_str}'
     elif num == 1:
         pointOne = 'egész egy' if den != 2 else 'és'
-        return_string = '{} {} {}'.format(whole, pointOne, den_str)
+        return_string = f'{whole} {pointOne} {den_str}'
     else:
-        return_string = '{} egész {} {}'.format(whole, num, den_str)
+        return_string = f'{whole} egész {num} {den_str}'
     return return_string
 
 
@@ -170,11 +165,11 @@ def pronounce_number_hu(num, places=2):
         if num > 99:
             hundreds = floor(num / 100)
             if hundreds > 0:
-                hundredConst = EXTRA_SPACE + 'száz' + EXTRA_SPACE
+                hundredConst = f'{EXTRA_SPACE}száz{EXTRA_SPACE}'
                 if hundreds == 1:
                     result += hundredConst
                 elif hundreds == 2:
-                    result += 'két' + hundredConst
+                    result += f'két{hundredConst}'
                 else:
                     result += NUM_STRING_HU[hundreds] + hundredConst
                 num -= hundreds * 100
@@ -189,7 +184,7 @@ def pronounce_number_hu(num, places=2):
                 if tens != 20:
                     result += NUM_STRING_HU[tens] + EXTRA_SPACE
                 else:
-                    result += "huszon" + EXTRA_SPACE
+                    result += f"huszon{EXTRA_SPACE}"
             if ones > 0:
                 result += NUM_STRING_HU[ones] + EXTRA_SPACE
         return result
@@ -204,14 +199,11 @@ def pronounce_number_hu(num, places=2):
 
         if last_triplet == 1:
             if scale_level == 0:
-                if result != '':
-                    result += '' + "egy"
-                else:
-                    result += "egy"
+                result += '' + "egy" if result != '' else "egy"
             elif scale_level == 1:
                 result += EXTRA_SPACE + NUM_POWERS_OF_TEN[1] + EXTRA_SPACE
             else:
-                result += "egy" + NUM_POWERS_OF_TEN[scale_level]
+                result += f"egy{NUM_POWERS_OF_TEN[scale_level]}"
         elif last_triplet > 1:
             result += pronounce_triplet_hu(last_triplet)
             if scale_level != 0:
@@ -234,34 +226,31 @@ def pronounce_number_hu(num, places=2):
     elif num == 0:
         return str(NUM_STRING_HU[0])
     elif num < 0:
-        return "mínusz " + pronounce_number_hu(abs(num), places)
+        return f"mínusz {pronounce_number_hu(abs(num), places)}"
     else:
         if num == int(num):
             return pronounce_whole_number_hu(num).strip('-')
-        else:
-            whole_number_part = floor(num)
-            fractional_part = num - whole_number_part
-            if whole_number_part == 0:
-                result += NUM_STRING_HU[0]
-            result += pronounce_whole_number_hu(whole_number_part)
-            if places > 0:
-                result += " egész "
-                fraction = pronounce_whole_number_hu(
-                                        round(fractional_part * 10 ** places))
-                result += fraction.replace(NUM_STRING_HU[2], 'két')
-                fraction_suffixes = [
-                    'tized', 'század', 'ezred', 'tízezred', 'százezred']
-                if places <= len(fraction_suffixes):
-                    result += ' ' + fraction_suffixes[places - 1]
-            return result
+        whole_number_part = floor(num)
+        fractional_part = num - whole_number_part
+        if whole_number_part == 0:
+            result += NUM_STRING_HU[0]
+        result += pronounce_whole_number_hu(whole_number_part)
+        if places > 0:
+            result += " egész "
+            fraction = pronounce_whole_number_hu(
+                                    round(fractional_part * 10 ** places))
+            result += fraction.replace(NUM_STRING_HU[2], 'két')
+            fraction_suffixes = [
+                'tized', 'század', 'ezred', 'tízezred', 'százezred']
+            if places <= len(fraction_suffixes):
+                result += f' {fraction_suffixes[places - 1]}'
+        return result
 
 
 def pronounce_ordinal_hu(num):
     ordinals = ["nulladik", "első", "második", "harmadik", "negyedik",
                 "ötödik", "hatodik", "hetedik", "nyolcadik", "kilencedik",
                 "tizedik"]
-    big_ordinals = ["", "ezredik", "milliomodik"]
-
     # only for whole positive numbers including zero
     if num < 0 or num != int(num):
         return num
@@ -274,18 +263,20 @@ def pronounce_ordinal_hu(num):
         last_digit = num - floor(num/10) * 10
         if root == "húsz":
             root = "husz"
+        big_ordinals = ["", "ezredik", "milliomodik"]
+
         if num % 1000000 == 0:
             return root.replace(NUM_POWERS_OF_TEN[2], big_ordinals[2])
         if num % 1000 == 0:
             return root.replace(NUM_POWERS_OF_TEN[1], big_ordinals[1])
         if last_digit == 1:
-            return root + "edik"
+            return f"{root}edik"
         elif root[-1] == 'ő':
-            return root[:-1] + 'edik'
+            return f'{root[:-1]}edik'
         elif last_digit != 0:
             return ordinals[last_digit].join(
                 root.rsplit(NUM_STRING_HU[last_digit], 1))
-        return root + "edik" if vtype == 1 else root + "adik"
+        return f"{root}edik" if vtype == 1 else f"{root}adik"
 
 
 def nice_time_hu(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -307,12 +298,7 @@ def nice_time_hu(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -325,10 +311,9 @@ def nice_time_hu(dt, speech=True, use_24hour=False, use_ampm=False):
         speak += pronounce_number_hu(dt.hour)
         speak = speak.replace(NUM_STRING_HU[2], 'két')
         speak += " óra"
-        if not dt.minute == 0:  # zero minutes are not pronounced
-            speak += " " + pronounce_number_hu(dt.minute)
+        if dt.minute != 0:  # zero minutes are not pronounced
+            speak += f" {pronounce_number_hu(dt.minute)}"
 
-        return speak  # ampm is ignored when use_24hour is true
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "éjfél"
@@ -346,20 +331,18 @@ def nice_time_hu(dt, speech=True, use_24hour=False, use_ampm=False):
         speak = speak.replace(NUM_STRING_HU[2], 'két')
         speak += " óra"
 
-        if not dt.minute == 0:
-            speak += " " + pronounce_number_hu(dt.minute)
+        if dt.minute != 0:
+            speak += f" {pronounce_number_hu(dt.minute)}"
 
         if use_ampm:
-            if dt.hour > 11:
-                if dt.hour < 18:
-                    speak = "délután " + speak  # 12:01 - 17:59
-                elif dt.hour < 22:
-                    speak = "este " + speak  # 18:00 - 21:59 este/evening
-                else:
-                    speak = "éjjel " + speak  # 22:00 - 23:59 éjjel/at night
-            elif dt.hour < 3:
-                speak = "éjjel " + speak  # 00:01 - 02:59 éjjel/at night
+            if dt.hour > 11 and dt.hour < 18:
+                speak = f"délután {speak}"
+            elif dt.hour > 11 and dt.hour < 22:
+                speak = f"este {speak}"
+            elif dt.hour > 11 or dt.hour < 3:
+                speak = f"éjjel {speak}"
             else:
-                speak = "reggel " + speak  # 03:00 - 11:59 reggel/in t. morning
+                speak = f"reggel {speak}"
 
-        return speak
+
+    return speak  # ampm is ignored when use_24hour is true

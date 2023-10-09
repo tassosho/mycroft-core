@@ -206,7 +206,7 @@ class TTS(metaclass=ABCMeta):
 
         self.bus.emit(Message("recognizer_loop:audio_output_end"))
         # Clean the cache as needed
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
+        cache_dir = mycroft.util.get_cache_directory(f"tts/{self.tts_name}")
         mycroft.util.curate_cache(cache_dir, min_free_percent=100)
 
         # This check will clear the "signal"
@@ -308,11 +308,11 @@ class TTS(metaclass=ABCMeta):
 
         chunks = self._preprocess_sentence(sentence)
         for sentence in chunks:
-            key = str(hashlib.md5(
-                sentence.encode('utf-8', 'ignore')).hexdigest())
+            key = hashlib.md5(sentence.encode('utf-8', 'ignore')).hexdigest()
             wav_file = os.path.join(
-                mycroft.util.get_cache_directory("tts/" + self.tts_name),
-                key + '.' + self.audio_ext)
+                mycroft.util.get_cache_directory(f"tts/{self.tts_name}"),
+                f'{key}.{self.audio_ext}',
+            )
 
             if os.path.exists(wav_file):
                 LOG.debug("TTS cache hit")
@@ -356,14 +356,13 @@ class TTS(metaclass=ABCMeta):
             key:        Hash key for the sentence
             phonemes:   phoneme string to save
         """
-        cache_dir = mycroft.util.get_cache_directory("tts/" + self.tts_name)
-        pho_file = os.path.join(cache_dir, key + ".pho")
+        cache_dir = mycroft.util.get_cache_directory(f"tts/{self.tts_name}")
+        pho_file = os.path.join(cache_dir, f"{key}.pho")
         try:
             with open(pho_file, "w") as cachefile:
                 cachefile.write(phonemes)
         except Exception:
-            LOG.exception("Failed to write {} to cache".format(pho_file))
-            pass
+            LOG.exception(f"Failed to write {pho_file} to cache")
 
     def load_phonemes(self, key):
         """Load phonemes from cache file.
@@ -372,8 +371,8 @@ class TTS(metaclass=ABCMeta):
             Key:    Key identifying phoneme cache
         """
         pho_file = os.path.join(
-            mycroft.util.get_cache_directory("tts/" + self.tts_name),
-            key + ".pho")
+            mycroft.util.get_cache_directory(f"tts/{self.tts_name}"), f"{key}.pho"
+        )
         if os.path.exists(pho_file):
             try:
                 with open(pho_file, "r") as cachefile:
@@ -410,16 +409,16 @@ class TTSValidator(metaclass=ABCMeta):
     def validate_instance(self):
         clazz = self.get_tts_class()
         if not isinstance(self.tts, clazz):
-            raise AttributeError('tts must be instance of ' + clazz.__name__)
+            raise AttributeError(f'tts must be instance of {clazz.__name__}')
 
     def validate_filename(self):
         filename = self.tts.filename
         if not (filename and filename.endswith('.wav')):
-            raise AttributeError('file: %s must be in .wav format!' % filename)
+            raise AttributeError(f'file: {filename} must be in .wav format!')
 
         dir_path = dirname(filename)
         if not (exists(dir_path) and isdir(dir_path)):
-            raise AttributeError('filename: %s is not valid!' % filename)
+            raise AttributeError(f'filename: {filename} is not valid!')
 
     @abstractmethod
     def validate_lang(self):

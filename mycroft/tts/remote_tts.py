@@ -61,10 +61,7 @@ class RemoteTTS(TTS):
         return phrases
 
     def __requests(self, phrases):
-        reqs = []
-        for p in phrases:
-            reqs.append(self.__request(p))
-        return reqs
+        return [self.__request(p) for p in phrases]
 
     def __request(self, p):
         return self.session.get(
@@ -81,9 +78,7 @@ class RemoteTTS(TTS):
             self.__save(resp.content)
             play_wav(self.filename).communicate()
         else:
-            LOG.error(
-                '%s Http Error: %s for url: %s' %
-                (resp.status_code, resp.reason, resp.url))
+            LOG.error(f'{resp.status_code} Http Error: {resp.reason} for url: {resp.url}')
 
     def __save(self, data):
         with open(self.filename, 'wb') as f:

@@ -55,8 +55,8 @@ def _generate_plurals(originals):
 
     """
     if isinstance(originals, dict):
-        return {key + 's': value for key, value in originals.items()}
-    return {value + "s" for value in originals}
+        return {f'{key}s': value for key, value in originals.items()}
+    return {f"{value}s" for value in originals}
 
 
 # negate next number (-2 = 0 - 2)
@@ -113,7 +113,7 @@ class _ReplaceableNumber():
         self.tokens = tokens
 
     def __bool__(self):
-        return bool(self.value is not None and self.value is not False)
+        return self.value is not None and self.value is not False
 
     @property
     def start_index(self):
@@ -177,8 +177,7 @@ def _partition_list(items, split_on):
     current_split = []
     for item in items:
         if split_on(item):
-            splits.append(current_split)
-            splits.append([item])
+            splits.extend((current_split, [item]))
             current_split = []
         else:
             current_split.append(item)
@@ -212,11 +211,9 @@ def _convert_words_to_numbers(text, short_scale=True, ordinals=False):
                 token.index < numbers_to_replace[0].start_index:
             results.append(token.word)
         else:
-            if numbers_to_replace and \
-                    token.index == numbers_to_replace[0].start_index:
+            if token.index == numbers_to_replace[0].start_index:
                 results.append(str(numbers_to_replace[0].value))
-            if numbers_to_replace and \
-                    token.index == numbers_to_replace[0].end_index:
+            if token.index == numbers_to_replace[0].end_index:
                 numbers_to_replace.pop(0)
 
     return ' '.join(results)
@@ -406,8 +403,10 @@ def _extract_decimal_with_text_en(tokens, short_scale, ordinals):
 
             # TODO handle number dot number number number
             if "." not in str(decimal.text):
-                return number.value + float('0.' + str(decimal.value)), \
-                        number.tokens + partitions[1] + decimal.tokens
+                return (
+                    number.value + float(f'0.{str(decimal.value)}'),
+                    number.tokens + partitions[1] + decimal.tokens,
+                )
     return None, None
 
 
@@ -450,27 +449,31 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
         prev_word = tokens[idx - 1].word if idx > 0 else ""
         next_word = tokens[idx + 1].word if idx + 1 < len(tokens) else ""
 
-        if word not in string_num_scale and \
-                word not in _STRING_NUM_EN and \
-                word not in _SUMS and \
-                word not in multiplies and \
-                not (ordinals and word in string_num_ordinal) and \
-                not is_numeric(word) and \
-                not isFractional_en(word, short_scale=short_scale) and \
-                not look_for_fractions(word.split('/')):
+        if (
+            word not in string_num_scale
+            and word not in _STRING_NUM_EN
+            and word not in _SUMS
+            and word not in multiplies
+            and (not ordinals or word not in string_num_ordinal)
+            and not is_numeric(word)
+            and not isFractional_en(word, short_scale=short_scale)
+            and not look_for_fractions(word.split('/'))
+        ):
             words_only = [token.word for token in number_words]
-            if number_words and not all([w in _ARTICLES |
-                                         _NEGATIVES for w in words_only]):
+            if number_words and any(
+                w not in _ARTICLES | _NEGATIVES for w in words_only
+            ):
                 break
-            else:
-                number_words = []
-                continue
-        elif word not in multiplies \
-                and prev_word not in multiplies \
-                and prev_word not in _SUMS \
-                and not (ordinals and prev_word in string_num_ordinal) \
-                and prev_word not in _NEGATIVES \
-                and prev_word not in _ARTICLES:
+            number_words = []
+            continue
+        elif (
+            word not in multiplies
+            and prev_word not in multiplies
+            and prev_word not in _SUMS
+            and (not ordinals or prev_word not in string_num_ordinal)
+            and prev_word not in _NEGATIVES
+            and prev_word not in _ARTICLES
+        ):
             number_words = [token]
         elif prev_word in _SUMS and word in _SUMS:
             number_words = [token]
@@ -479,10 +482,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # is this word already a number ?
         if is_numeric(word):
-            if word.isdigit():            # doesn't work with decimals
-                val = int(word)
-            else:
-                val = float(word)
+            val = int(word) if word.isdigit() else float(word)
             current_val = val
 
         # is this word the name of a number ?
@@ -521,8 +521,7 @@ def _extract_whole_number_with_text_en(tokens, short_scale, ordinals):
 
         # 2 fifths
         if not ordinals:
-            next_val = isFractional_en(next_word, short_scale=short_scale)
-            if next_val:
+            if next_val := isFractional_en(next_word, short_scale=short_scale):
                 if not val:
                     val = 1
                 val = val * next_val

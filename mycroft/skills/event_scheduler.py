@@ -142,8 +142,7 @@ class EventScheduler(Thread):
 
             # Don't schedule if the event is repeating and already scheduled
             if repeat and event in self.events:
-                LOG.debug('Repeating event {} is already scheduled, discarding'
-                          .format(event))
+                LOG.debug(f'Repeating event {event} is already scheduled, discarding')
             else:
                 # add received event and time
                 event_list.append((sched_time, repeat, data))
@@ -217,7 +216,7 @@ class EventScheduler(Thread):
         with self.event_lock:
             if event_name in self.events:
                 event = self.events[event_name]
-        emitter_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        emitter_name = f'mycroft.event_status.callback.{event_name}'
         self.bus.emit(message.reply(emitter_name, data=event))
 
     def store(self):
@@ -281,7 +280,7 @@ class EventSchedulerInterface:
         Returns:
             str: name unique to this skill
         """
-        return str(self.sched_id) + ':' + (name or '')
+        return f'{str(self.sched_id)}:' + (name or '')
 
     def _schedule_event(self, handler, when, data, name, repeat_interval=None):
         """Underlying method for schedule_event and schedule_repeating_event.
@@ -407,11 +406,9 @@ class EventSchedulerInterface:
         event_name = self._create_unique_name(name)
         data = {'name': event_name}
 
-        reply_name = 'mycroft.event_status.callback.{}'.format(event_name)
+        reply_name = f'mycroft.event_status.callback.{event_name}'
         msg = Message('mycroft.scheduler.get_event', data=data)
-        status = self.bus.wait_for_response(msg, reply_type=reply_name)
-
-        if status:
+        if status := self.bus.wait_for_response(msg, reply_type=reply_name):
             event_time = int(status.data[0][0])
             current_time = int(time.time())
             time_left_in_seconds = event_time - current_time

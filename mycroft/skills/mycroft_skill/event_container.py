@@ -36,7 +36,7 @@ def get_handler_name(handler):
         string: handler name as string
     """
     if '__self__' in dir(handler) and 'name' in dir(handler.__self__):
-        return handler.__self__.name + '.' + handler.__name__
+        return f'{handler.__self__.name}.{handler.__name__}'
     else:
         return handler.__name__
 
@@ -150,15 +150,14 @@ class EventContainer:
         Returns:
             bool: True if found and removed, False if not found
         """
-        print("Removing event {}".format(name))
+        print(f"Removing event {name}")
         removed = False
         for _name, _handler in list(self.events):
             if name == _name:
                 try:
                     self.events.remove((_name, _handler))
                 except ValueError:
-                    LOG.error('Failed to remove event {}'.format(name))
-                    pass
+                    LOG.error(f'Failed to remove event {name}')
                 removed = True
 
         # Because of function wrappers, the emitter doesn't always directly

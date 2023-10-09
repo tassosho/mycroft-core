@@ -76,10 +76,7 @@ class ContextManager:
         """
         metadata = metadata or {}
         try:
-            if len(self.frame_stack) > 0:
-                top_frame = self.frame_stack[0]
-            else:
-                top_frame = None
+            top_frame = self.frame_stack[0] if len(self.frame_stack) > 0 else None
             if top_frame and top_frame[0].metadata_matches(metadata):
                 top_frame[0].merge_context(entity, metadata)
             else:
@@ -107,7 +104,6 @@ class ContextManager:
         if not max_frames or max_frames > len(relevant_frames):
             max_frames = len(relevant_frames)
 
-        missing_entities = list(missing_entities)
         context = []
         last = ''
         depth = 0
@@ -116,7 +112,7 @@ class ContextManager:
                               relevant_frames[i].entities]
             for entity in frame_entities:
                 entity['confidence'] = entity.get('confidence', 1.0) \
-                    / (2.0 + depth)
+                        / (2.0 + depth)
             context += frame_entities
 
             # Update depth
@@ -126,7 +122,7 @@ class ContextManager:
             print(depth)
 
         result = []
-        if len(missing_entities) > 0:
+        if missing_entities := list(missing_entities):
             for entity in context:
                 if entity.get('data') in missing_entities:
                     result.append(entity)
@@ -326,7 +322,7 @@ class IntentService:
             # normalized version following.
             combined = utterances + list(set(norm_utterances) -
                                          set(utterances))
-            LOG.debug("Utterances: {}".format(combined))
+            LOG.debug(f"Utterances: {combined}")
 
             stopwatch = Stopwatch()
             intent = None
@@ -340,14 +336,13 @@ class IntentService:
                     intent = self._adapt_intent_match(utterances,
                                                       norm_utterances, lang)
                     for utt in combined:
-                        _intent = PadatiousService.instance.calc_intent(utt)
-                        if _intent:
+                        if _intent := PadatiousService.instance.calc_intent(utt):
                             best = padatious_intent.conf if padatious_intent\
-                                        else 0.0
+                                            else 0.0
                             if best < _intent.conf:
                                 padatious_intent = _intent
-                    LOG.debug("Padatious intent: {}".format(padatious_intent))
-                    LOG.debug("    Adapt intent: {}".format(intent))
+                    LOG.debug(f"Padatious intent: {padatious_intent}")
+                    LOG.debug(f"    Adapt intent: {intent}")
 
             if converse:
                 # Report that converse handled the intent and return
@@ -434,19 +429,27 @@ class IntentService:
 
         for idx, utt in enumerate(raw_utt):
             try:
-                intents = [i for i in self.engine.determine_intent(
-                    utt, 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
+                intents = list(
+                    self.engine.determine_intent(
+                        utt,
+                        100,
+                        include_tags=True,
+                        context_manager=self.context_manager,
+                    )
+                )
                 if intents:
                     take_best(intents[0], utt)
 
                 # Also test the normalized version, but set the utternace to
                 # the raw version so skill has access to original STT
-                norm_intents = [i for i in self.engine.determine_intent(
-                    norm_utt[idx], 100,
-                    include_tags=True,
-                    context_manager=self.context_manager)]
+                norm_intents = list(
+                    self.engine.determine_intent(
+                        norm_utt[idx],
+                        100,
+                        include_tags=True,
+                        context_manager=self.context_manager,
+                    )
+                )
                 if norm_intents:
                     take_best(norm_intents[0], utt)
             except Exception as e:
@@ -489,17 +492,19 @@ class IntentService:
                      optionally can include 'word' to be injected as
                      an alias for the context item.
         """
-        entity = {'confidence': 1.0}
         context = message.data.get('context')
         word = message.data.get('word') or ''
         origin = message.data.get('origin') or ''
         # if not a string type try creating a string from it
         if not isinstance(word, str):
             word = str(word)
-        entity['data'] = [(word, context)]
-        entity['match'] = word
-        entity['key'] = word
-        entity['origin'] = origin
+        entity = {
+            'confidence': 1.0,
+            'data': [(word, context)],
+            'match': word,
+            'key': word,
+            'origin': origin,
+        }
         self.context_manager.inject_context(entity)
 
     def handle_remove_context(self, message):
@@ -508,8 +513,7 @@ class IntentService:
         Args:
             message: data contains the 'context' item to remove
         """
-        context = message.data.get('context')
-        if context:
+        if context := message.data.get('context'):
             self.context_manager.remove_context(context)
 
     def handle_clear_context(self, message):

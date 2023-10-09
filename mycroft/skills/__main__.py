@@ -227,8 +227,7 @@ def _register_intent_services(bus):
     try:
         PadatiousService(bus, service)
     except Exception as e:
-        LOG.exception('Failed to create padatious handlers '
-                      '({})'.format(repr(e)))
+        LOG.exception(f'Failed to create padatious handlers ({repr(e)})')
 
     # Register handler to trigger fallback system
     bus.on('intent_failure', FallbackSkill.make_intent_failure_handler(bus))

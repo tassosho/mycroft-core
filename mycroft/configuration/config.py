@@ -107,12 +107,12 @@ class LocalConf(dict):
                 for key in config:
                     self.__setitem__(key, config[key])
 
-                LOG.debug("Configuration {} loaded".format(path))
+                LOG.debug(f"Configuration {path} loaded")
             except Exception as e:
-                LOG.error("Error loading configuration '{}'".format(path))
+                LOG.error(f"Error loading configuration '{path}'")
                 LOG.error(repr(e))
         else:
-            LOG.debug("Configuration '{}' not defined, skipping".format(path))
+            LOG.debug(f"Configuration '{path}' not defined, skipping")
 
     def store(self, path=None):
         """
@@ -150,8 +150,7 @@ class RemoteConf(LocalConf):
             try:
                 location = api.get_location()
             except RequestException as e:
-                LOG.error("RequestException fetching remote location: {}"
-                          .format(str(e)))
+                LOG.error(f"RequestException fetching remote location: {str(e)}")
                 if exists(cache) and isfile(cache):
                     location = load_commented_json(cache).get('location')
 
@@ -160,18 +159,16 @@ class RemoteConf(LocalConf):
             # Remove server specific entries
             config = {}
             translate_remote(config, setting)
-            for key in config:
-                self.__setitem__(key, config[key])
+            for key, value in config.items():
+                self.__setitem__(key, value)
             self.store(cache)
 
         except RequestException as e:
-            LOG.error("RequestException fetching remote configuration: {}"
-                      .format(str(e)))
+            LOG.error(f"RequestException fetching remote configuration: {str(e)}")
             self.load_local(cache)
 
         except Exception as e:
-            LOG.error("Failed to fetch remote configuration: %s" % repr(e),
-                      exc_info=True)
+            LOG.error(f"Failed to fetch remote configuration: {repr(e)}", exc_info=True)
             self.load_local(cache)
 
 
@@ -220,14 +217,12 @@ class Configuration:
         for c in configs:
             merge_dict(base, c)
 
-        # copy into cache
-        if cache:
-            Configuration.__config.clear()
-            for key in base:
-                Configuration.__config[key] = base[key]
-            return Configuration.__config
-        else:
+        if not cache:
             return base
+        Configuration.__config.clear()
+        for key in base:
+            Configuration.__config[key] = base[key]
+        return Configuration.__config
 
     @staticmethod
     def set_config_update_handlers(bus):

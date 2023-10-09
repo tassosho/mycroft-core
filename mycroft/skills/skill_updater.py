@@ -65,19 +65,16 @@ class SkillUpdater:
         Update immediately if the .msm or installed skills file is missing
         otherwise use the timestamp on .msm as a basis.
         """
-        msm_files_exist = (
-                os.path.exists(self.dot_msm_path) and
-                os.path.exists(self.installed_skills_file_path)
-        )
-        if msm_files_exist:
+        if msm_files_exist := (
+            os.path.exists(self.dot_msm_path)
+            and os.path.exists(self.installed_skills_file_path)
+        ):
             mtime = os.path.getmtime(self.dot_msm_path)
-            next_download = mtime + self.update_interval
+            return mtime + self.update_interval
         else:
             # Last update can't be found or the requirements don't seem to be
             # installed trigger update before skill loading
-            next_download = time() - 1
-
-        return next_download
+            return time() - 1
 
     @property
     def config(self):
@@ -177,9 +174,7 @@ class SkillUpdater:
         """Invoke MSM to install or update a skill."""
         try:
             # Determine if all defaults are installed
-            defaults = all(
-                [s.is_local for s in self.msm.default_skills.values()]
-            )
+            defaults = all(s.is_local for s in self.msm.default_skills.values())
             num_threads = 20 if not defaults or quick else 2
             self.msm.apply(
                 self.install_or_update,
@@ -189,7 +184,7 @@ class SkillUpdater:
             self.post_manifest()
 
         except MsmException as e:
-            LOG.error('Failed to update skills: {}'.format(repr(e)))
+            LOG.error(f'Failed to update skills: {repr(e)}')
 
     def post_manifest(self, reload_skills_manifest=False):
         """Post the manifest of the device's skills to the backend."""
@@ -218,9 +213,7 @@ class SkillUpdater:
                 self.msm.install(skill, origin='default')
             except Exception:
                 if skill.name in self.default_skill_names:
-                    LOG.warning(
-                        'Failed to install default skill: ' + skill.name
-                    )
+                    LOG.warning(f'Failed to install default skill: {skill.name}')
                     self.default_skill_install_error = True
                 raise
         self.installed_skills.add(skill.name)

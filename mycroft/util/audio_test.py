@@ -44,7 +44,7 @@ def mute_output():
     Redirects stdout and stderr to dev-null and restores them on exit.
     """
     # Open a pair of null files
-    null_fds = [os.open(os.devnull, os.O_RDWR) for i in range(2)]
+    null_fds = [os.open(os.devnull, os.O_RDWR) for _ in range(2)]
     # Save the actual stdout (1) and stderr (2) file  descriptors.
     orig_fds = [os.dup(1), os.dup(2)]
     # Assign the null pointers to stdout and stderr.
@@ -94,21 +94,21 @@ def main():
         for device_index in range(pa.get_device_count()):
             dev = pa.get_device_info_by_index(device_index)
             if dev['maxInputChannels'] > 0:
-                print('   {}:       {}'.format(device_index, dev['name']))
+                print(f"   {device_index}:       {dev['name']}")
         print()
 
     config = Configuration.get()
     if "device_name" in config["listener"]:
         dev = config["listener"]["device_name"]
     elif "device_index" in config["listener"]:
-        dev = "Device at index {}".format(config["listener"]["device_index"])
+        dev = f'Device at index {config["listener"]["device_index"]}'
     else:
         dev = "Default device"
     samplerate = config["listener"]["sample_rate"]
     play_cmd = config["play_wav_cmdline"].replace("%1", "WAV_FILE")
     print(" ========================== Info ===========================")
-    print(" Input device: {} @ Sample rate: {} Hz".format(dev, samplerate))
-    print(" Playback commandline: {}".format(play_cmd))
+    print(f" Input device: {dev} @ Sample rate: {samplerate} Hz")
+    print(f" Playback commandline: {play_cmd}")
     print()
     print(" ===========================================================")
     print(" ==         STARTING TO RECORD, MAKE SOME NOISE!          ==")
@@ -123,9 +123,8 @@ def main():
     print(" ===========================================================")
     print(" ==           DONE RECORDING, PLAYING BACK...             ==")
     print(" ===========================================================")
-    status = play_wav(args.filename).wait()
-    if status:
-        print('An error occured while playing back audio ({})'.format(status))
+    if status := play_wav(args.filename).wait():
+        print(f'An error occured while playing back audio ({status})')
 
 
 if __name__ == "__main__":

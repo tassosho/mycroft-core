@@ -53,31 +53,26 @@ def get_services(services_folder):
         Returns:
             Sorted list of audio services.
     """
-    LOG.info("Loading services from " + services_folder)
+    LOG.info(f"Loading services from {services_folder}")
     services = []
     possible_services = listdir(services_folder)
     for i in possible_services:
         location = join(services_folder, i)
-        if (isdir(location) and
-                not MAINMODULE + ".py" in listdir(location)):
+        if isdir(location) and f"{MAINMODULE}.py" not in listdir(location):
             for j in listdir(location):
                 name = join(location, j)
-                if (not isdir(name) or
-                        not MAINMODULE + ".py" in listdir(name)):
+                if not isdir(name) or f"{MAINMODULE}.py" not in listdir(name):
                     continue
                 try:
                     services.append(create_service_descriptor(name))
                 except Exception:
-                    LOG.error('Failed to create service from ' + name,
-                              exc_info=True)
-        if (not isdir(location) or
-                not MAINMODULE + ".py" in listdir(location)):
+                    LOG.error(f'Failed to create service from {name}', exc_info=True)
+        if not isdir(location) or f"{MAINMODULE}.py" not in listdir(location):
             continue
         try:
             services.append(create_service_descriptor(location))
         except Exception:
-            LOG.error('Failed to create service from ' + location,
-                      exc_info=True)
+            LOG.error(f'Failed to create service from {location}', exc_info=True)
     return sorted(services, key=lambda p: p.get('name'))
 
 
@@ -93,7 +88,7 @@ def load_services(config, bus, path=None):
             List of started services.
     """
     if path is None:
-        path = dirname(abspath(__file__)) + '/services/'
+        path = f'{dirname(abspath(__file__))}/services/'
     service_directories = get_services(path)
     service = []
     for descriptor in service_directories:
@@ -112,13 +107,13 @@ def load_services(config, bus, path=None):
                 s = service_module.autodetect(config, bus)
                 service += s
             except Exception as e:
-                LOG.error('Failed to autodetect. ' + repr(e))
+                LOG.error(f'Failed to autodetect. {repr(e)}')
         if hasattr(service_module, 'load_service'):
             try:
                 s = service_module.load_service(config, bus)
                 service += s
             except Exception as e:
-                LOG.error('Failed to load service. ' + repr(e))
+                LOG.error(f'Failed to load service. {repr(e)}')
 
     return service
 
@@ -169,7 +164,7 @@ class AudioService:
         for s in self.service:
             if s.name == default_name:
                 self.default = s
-                LOG.info('Found ' + self.default.name)
+                LOG.info(f'Found {self.default.name}')
                 break
         else:
             self.default = None
@@ -256,8 +251,7 @@ class AudioService:
                 if self.current:
                     name = self.current.name
                     if self.current.stop():
-                        self.bus.emit(Message("mycroft.stop.handled",
-                                              {"by": "audio:" + name}))
+                        self.bus.emit(Message("mycroft.stop.handled", {"by": f"audio:{name}"}))
 
                     self.current = None
 
@@ -308,19 +302,18 @@ class AudioService:
         # check if user requested a particular service
         if prefered_service and uri_type in prefered_service.supported_uris():
             selected_service = prefered_service
-        # check if default supports the uri
         elif self.default and uri_type in self.default.supported_uris():
-            LOG.debug("Using default backend ({})".format(self.default.name))
+            LOG.debug(f"Using default backend ({self.default.name})")
             selected_service = self.default
         else:  # Check if any other service can play the media
             LOG.debug("Searching the services")
             for s in self.service:
                 if uri_type in s.supported_uris():
-                    LOG.debug("Service {} supports URI {}".format(s, uri_type))
+                    LOG.debug(f"Service {s} supports URI {uri_type}")
                     selected_service = s
                     break
             else:
-                LOG.info('No service found for uri_type: ' + uri_type)
+                LOG.info(f'No service found for uri_type: {uri_type}')
                 return
         if not selected_service.supports_mime_hints:
             tracks = [t[0] if isinstance(t, list) else t for t in tracks]
@@ -353,7 +346,7 @@ class AudioService:
             if ('utterance' in message.data and
                     s.name in message.data['utterance']):
                 prefered_service = s
-                LOG.debug(s.name + ' would be prefered')
+                LOG.debug(f'{prefered_service.name} would be prefered')
                 break
         else:
             prefered_service = None
@@ -366,10 +359,7 @@ class AudioService:
             Args:
                 message: message bus message, not used but required
         """
-        if self.current:
-            track_info = self.current.track_info()
-        else:
-            track_info = {}
+        track_info = self.current.track_info() if self.current else {}
         self.bus.emit(Message('mycroft.audio.service.track_info_reply',
                               data=track_info))
 
@@ -410,10 +400,10 @@ class AudioService:
     def shutdown(self):
         for s in self.service:
             try:
-                LOG.info('shutting down ' + s.name)
+                LOG.info(f'shutting down {s.name}')
                 s.shutdown()
             except Exception as e:
-                LOG.error('shutdown of ' + s.name + ' failed: ' + repr(e))
+                LOG.error(f'shutdown of {s.name} failed: {repr(e)}')
 
         # remove listeners
         self.bus.remove('mycroft.audio.service.play', self._play)

@@ -99,8 +99,7 @@ class MutableStream:
         input_latency = self.wrapped_stream.get_input_latency()
         if input_latency > 0.2:
             LOG.warning("High input latency: %f" % input_latency)
-        audio = b"".join(list(frames))
-        return audio
+        return b"".join(list(frames))
 
     def close(self):
         self.wrapped_stream.close()
@@ -265,14 +264,10 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         silence_duration = 0
 
         def increase_noise(level):
-            if level < max_noise:
-                return level + 200 * sec_per_buffer
-            return level
+            return level + 200 * sec_per_buffer if level < max_noise else level
 
         def decrease_noise(level):
-            if level > min_noise:
-                return level - 100 * sec_per_buffer
-            return level
+            return level - 100 * sec_per_buffer if level > min_noise else level
 
         # Smallest number of loud chunks required to return
         min_loud_chunks = int(self.MIN_LOUD_SEC_PER_PHRASE / sec_per_buffer)
@@ -293,10 +288,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
 
         phrase_complete = False
         while num_chunks < max_chunks and not phrase_complete:
-            if ww_frames:
-                chunk = ww_frames.popleft()
-            else:
-                chunk = self.record_sound_chunk(source)
+            chunk = ww_frames.popleft() if ww_frames else self.record_sound_chunk(source)
             byte_data += chunk
             num_chunks += 1
 
@@ -564,9 +556,9 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         # If enabled, play a wave file with a short sound to audibly
         # indicate recording has begun.
         if self.config.get('confirm_listening'):
-            audio_file = resolve_resource_file(
-                self.config.get('sounds').get('start_listening'))
-            if audio_file:
+            if audio_file := resolve_resource_file(
+                self.config.get('sounds').get('start_listening')
+            ):
                 source.mute()
                 play_wav(audio_file).wait()
                 source.unmute()
@@ -588,7 +580,7 @@ class ResponsiveRecognizer(speech_recognition.Recognizer):
         if self.save_utterances:
             LOG.info("Recording utterance")
             stamp = str(datetime.datetime.now())
-            filename = "/tmp/mycroft_utterance%s.wav" % stamp
+            filename = f"/tmp/mycroft_utterance{stamp}.wav"
             with open(filename, 'wb') as filea:
                 filea.write(audio_data.get_wav_data())
             LOG.debug("Thinking...")

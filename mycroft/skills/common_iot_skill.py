@@ -46,7 +46,7 @@ def auto():
     return next(_counter)
 
 
-class _BusKeys():
+class _BusKeys:
     """
     This class contains some strings used to identify
     messages on the messagebus. They are used in in
@@ -54,18 +54,14 @@ class _BusKeys():
     are not intended to be used elsewhere.
     """
     BASE = "iot"
-    TRIGGER = BASE + ":trigger"
-    RESPONSE = TRIGGER + ".response"
-    RUN = BASE + ":run."  # Will have skill_id appened
-    REGISTER = BASE + "register"
-    CALL_FOR_REGISTRATION = REGISTER + ".request"
-    SPEAK = BASE + ":speak"
+    TRIGGER = f"{BASE}:trigger"
+    RESPONSE = f"{TRIGGER}.response"
+    RUN = f"{BASE}:run."
+    REGISTER = f"{BASE}register"
+    CALL_FOR_REGISTRATION = f"{REGISTER}.request"
+    SPEAK = f"{BASE}:speak"
 
 
-####################################################################
-# When adding a new Thing, Attribute, etc, be sure to also add the #
-# corresponding voc files to the skill-iot-control.                #
-####################################################################
 
 @unique
 class Thing(Enum):
@@ -250,9 +246,9 @@ class IoTRequest():
                     ' value={value},'
                     ' state={state}'
                     ')')
-        entity = '"{}"'.format(self.entity) if self.entity else None
-        scene = '"{}"'.format(self.scene) if self.scene else None
-        value = '"{}"'.format(self.value) if self.value is not None else None
+        entity = f'"{self.entity}"' if self.entity else None
+        scene = f'"{self.scene}"' if self.scene else None
+        value = f'"{self.value}"' if self.value is not None else None
         return template.format(
             action=self.action,
             thing=self.thing,
@@ -267,9 +263,7 @@ class IoTRequest():
     def version(self):
         if self.state is not None:
             return IoTRequestVersion.V3
-        if self.value is not None:
-            return IoTRequestVersion.V2
-        return IoTRequestVersion.V1
+        return IoTRequestVersion.V2 if self.value is not None else IoTRequestVersion.V1
 
     def to_dict(self):
         return {

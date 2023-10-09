@@ -97,10 +97,7 @@ def match_one(query, choices):
         if score > best[1]:
             best = (c, score)
 
-    if isinstance(choices, dict):
-        return (choices[best[0]], best[1])
-    else:
-        return best
+    return (choices[best[0]], best[1]) if isinstance(choices, dict) else best
 
 
 def extract_numbers(text, short_scale=True, ordinals=False, lang=None):

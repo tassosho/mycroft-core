@@ -42,32 +42,20 @@ def nice_number_pt(number, speech, denominators):
     whole, num, den = result
 
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     # denominador
     den_str = _FRACTION_STRING_PT[den]
     # fracções
     if whole == 0:
-        if num == 1:
-            # um décimo
-            return_string = 'um {}'.format(den_str)
-        else:
-            # três meio
-            return_string = '{} {}'.format(num, den_str)
-    # inteiros >10
+        return_string = f'um {den_str}' if num == 1 else f'{num} {den_str}'
     elif num == 1:
         # trinta e um
-        return_string = '{} e {}'.format(whole, den_str)
-    # inteiros >10 com fracções
+        return_string = f'{whole} e {den_str}'
     else:
         # vinte e 3 décimo
-        return_string = '{} e {} {}'.format(whole, num, den_str)
+        return_string = f'{whole} e {num} {den_str}'
     # plural
     if num > 1:
         return_string += 's'
@@ -88,9 +76,7 @@ def pronounce_number_pt(num, places=2):
         # TODO: Support n > 100
         return str(num)
 
-    result = ""
-    if num < 0:
-        result = "menos "
+    result = "menos " if num < 0 else ""
     num = abs(num)
 
     if num >= 20:
@@ -98,18 +84,18 @@ def pronounce_number_pt(num, places=2):
         ones = int(num - tens)
         result += _NUM_STRING_PT[tens]
         if ones > 0:
-            result += " e " + _NUM_STRING_PT[ones]
+            result += f" e {_NUM_STRING_PT[ones]}"
     else:
         result += _NUM_STRING_PT[int(num)]
 
     # Deal with decimal part, in portuguese is commonly used the comma
     # instead the dot. Decimal part can be written both with comma
     # and dot, but when pronounced, its pronounced "virgula"
-    if not num == int(num) and places > 0:
+    if num != int(num) and places > 0:
         result += " vírgula"
         place = 10
         while int(num * place) % 10 > 0 and places > 0:
-            result += " " + _NUM_STRING_PT[int(num * place) % 10]
+            result += f" {_NUM_STRING_PT[int(num * place) % 10]}"
             place *= 10
             places -= 1
     return result
@@ -132,12 +118,7 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -148,14 +129,10 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
     speak = ""
     if use_24hour:
         # simply speak the number
-        if dt.hour == 1:
-            speak += "uma"
-        else:
-            speak += pronounce_number_pt(dt.hour)
-
+        speak += "uma" if dt.hour == 1 else pronounce_number_pt(dt.hour)
         # equivalent to "quarter past ten"
         if dt.minute > 0:
-            speak += " e " + pronounce_number_pt(dt.minute)
+            speak += f" e {pronounce_number_pt(dt.minute)}"
 
     else:
         # speak number and add daytime identifier
@@ -183,10 +160,9 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
             speak += "meia noite"
         elif hour == 12:
             speak += "meio dia"
-        # 1 and 2 are pronounced in female form when talking about hours
-        elif hour == 1 or hour == 13:
+        elif hour in [1, 13]:
             speak += "uma"
-        elif hour == 2 or hour == 14:
+        elif hour in [2, 14]:
             speak += "duas"
         elif hour < 13:
             speak = pronounce_number_pt(hour)
@@ -200,11 +176,10 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " e meia"
             elif minute == -15:
                 speak += " menos um quarto"
+            elif minute > 0:
+                speak += f" e {pronounce_number_pt(minute)}"
             else:
-                if minute > 0:
-                    speak += " e " + pronounce_number_pt(minute)
-                else:
-                    speak += " " + pronounce_number_pt(minute)
+                speak += f" {pronounce_number_pt(minute)}"
 
         # exact time
         if minute == 0 and not use_ampm:
@@ -218,6 +193,6 @@ def nice_time_pt(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " da manhã"
             elif hour >= 13 and hour < 21:
                 speak += " da tarde"
-            elif hour != 0 and hour != 12:
+            elif hour not in [0, 12]:
                 speak += " da noite"
     return speak

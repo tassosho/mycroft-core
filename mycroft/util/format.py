@@ -68,8 +68,9 @@ def _translate_word(name, lang):
 
     lang_code = get_full_lang_code(lang)
 
-    filename = resolve_resource_file(join("text", lang_code, name+".word"))
-    if filename:
+    if filename := resolve_resource_file(
+        join("text", lang_code, f"{name}.word")
+    ):
         # open the file
         try:
             with open(filename, 'r', encoding='utf8') as f:
@@ -95,28 +96,27 @@ class DateTimeFormat:
         self.config_path = config_path
 
     def cache(self, lang):
-        if lang not in self.lang_config:
-            try:
+        if lang in self.lang_config:
+            return
+        try:
                 # Attempt to load the language-specific formatting data
-                with open(self.config_path + '/' + lang + '/date_time.json',
-                          'r') as lang_config_file:
-                    self.lang_config[lang] = json.loads(
-                        lang_config_file.read())
-            except FileNotFoundError:
+            with open(f'{self.config_path}/{lang}/date_time.json', 'r') as lang_config_file:
+                self.lang_config[lang] = json.loads(
+                    lang_config_file.read())
+        except FileNotFoundError:
                 # Fallback to English formatting
-                with open(self.config_path + '/en-us/date_time.json',
-                          'r') as lang_config_file:
-                    self.lang_config[lang] = json.loads(
-                        lang_config_file.read())
+            with open(f'{self.config_path}/en-us/date_time.json', 'r') as lang_config_file:
+                self.lang_config[lang] = json.loads(
+                    lang_config_file.read())
 
-            for x in ['decade_format', 'hundreds_format', 'thousand_format',
+        for x in ['decade_format', 'hundreds_format', 'thousand_format',
                       'year_format']:
-                i = 1
-                while self.lang_config[lang][x].get(str(i)):
-                    self.lang_config[lang][x][str(i)]['re'] = (
-                        re.compile(self.lang_config[lang][x][str(i)]['match']
-                                   ))
-                    i = i + 1
+            i = 1
+            while self.lang_config[lang][x].get(str(i)):
+                self.lang_config[lang][x][str(i)]['re'] = (
+                    re.compile(self.lang_config[lang][x][str(i)]['match']
+                               ))
+                i += 1
 
     def _number_strings(self, number, lang):
         x = (self.lang_config[lang]['number'].get(str(number % 10)) or
@@ -161,7 +161,7 @@ class DateTimeFormat:
             e = self.lang_config[lang][format_section][str(i)]
             if e['re'].match(str(number)):
                 return e['format']
-            i = i + 1
+            i += 1
         return s
 
     def _decade_format(self, number, number_tuple, lang):
@@ -247,7 +247,8 @@ class DateTimeFormat:
 
 
 date_time_format = DateTimeFormat(
-    os.path.dirname(os.path.abspath(__file__)) + '/../res/text')
+    f'{os.path.dirname(os.path.abspath(__file__))}/../res/text'
+)
 
 
 def nice_number(number, lang=None, speech=True, denominators=None):
@@ -285,9 +286,6 @@ def nice_number(number, lang=None, speech=True, denominators=None):
         return nice_number_nl(number, speech, denominators)
     elif lang_code == "da":
         return nice_number_da(number, speech, denominators)
-    elif lang_code == "sv":
-        return nice_number_sv(number, speech, denominators)
-
     # Default to the raw number for unsupported languages,
     # hopefully the STT engine will pronounce understandably.
     return str(number)
@@ -481,10 +479,10 @@ def nice_duration(duration, lang=None, speech=True):
     minutes = int(duration // 60 % 60)
     seconds = int(duration % 60)
 
+    out = ""
     if speech:
-        out = ""
         if days > 0:
-            out += pronounce_number(days, lang) + " "
+            out += f"{pronounce_number(days, lang)} "
             if days == 1:
                 out += _translate_word("day", lang)
             else:
@@ -493,7 +491,7 @@ def nice_duration(duration, lang=None, speech=True):
         if hours > 0:
             if out:
                 out += " "
-            out += pronounce_number(hours, lang) + " "
+            out += f"{pronounce_number(hours, lang)} "
             if hours == 1:
                 out += _translate_word("hour", lang)
             else:
@@ -501,7 +499,7 @@ def nice_duration(duration, lang=None, speech=True):
         if minutes > 0:
             if out:
                 out += " "
-            out += pronounce_number(minutes, lang) + " "
+            out += f"{pronounce_number(minutes, lang)} "
             if minutes == 1:
                 out += _translate_word("minute", lang)
             else:
@@ -509,21 +507,19 @@ def nice_duration(duration, lang=None, speech=True):
         if seconds > 0:
             if out:
                 out += " "
-            out += pronounce_number(seconds, lang) + " "
+            out += f"{pronounce_number(seconds, lang)} "
             if seconds == 1:
                 out += _translate_word("second", lang)
             else:
                 out += _translate_word("seconds", lang)
     else:
-        # M:SS, MM:SS, H:MM:SS, Dd H:MM:SS format
-        out = ""
         if days > 0:
-            out = str(days) + "d "
+            out = f"{days}d "
         if hours > 0 or days > 0:
-            out += str(hours) + ":"
+            out += f"{hours}:"
         if minutes < 10 and (hours > 0 or days > 0):
             out += "0"
-        out += str(minutes)+":"
+        out += f"{minutes}:"
         if seconds < 10:
             out += "0"
         out += str(seconds)

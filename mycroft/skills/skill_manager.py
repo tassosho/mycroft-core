@@ -101,9 +101,7 @@ class SkillManager(Thread):
     def create_msm():
         LOG.debug('instantiating msm via static method...')
         msm_config = build_msm_config(Configuration.get())
-        msm_instance = msm_creator(msm_config)
-
-        return msm_instance
+        return msm_creator(msm_config)
 
     def schedule_now(self, _):
         self.skill_updater.next_download = time() - 1
@@ -127,9 +125,7 @@ class SkillManager(Thread):
                         continue
                 self._load_skill(skill.path)
             else:
-                LOG.error(
-                    'Priority skill {} can\'t be found'.format(skill_name)
-                )
+                LOG.error(f"Priority skill {skill_name} can\'t be found")
 
         self._alive_status = True
 
@@ -161,7 +157,7 @@ class SkillManager(Thread):
     def _remove_git_locks(self):
         """If git gets killed from an abrupt shutdown it leaves lock files."""
         for i in glob(os.path.join(self.msm.skills_dir, '*/.git/index.lock')):
-            LOG.warning('Found and removed git lock file: ' + i)
+            LOG.warning(f'Found and removed git lock file: {i}')
             os.remove(i)
 
     def _load_on_startup(self):
@@ -182,8 +178,7 @@ class SkillManager(Thread):
                     skill_loader.reload()
                     reload_occured = True
             except Exception:
-                LOG.exception('Unhandled exception occured while '
-                              'reloading {}'.format(skill_dir))
+                LOG.exception(f'Unhandled exception occured while reloading {skill_dir}')
 
         if reload_occured:
             # If a reload occured a skill gid may have changed.
@@ -200,7 +195,7 @@ class SkillManager(Thread):
         try:
             skill_loader.load()
         except Exception:
-            LOG.exception('Load of skill {} failed!'.format(skill_directory))
+            LOG.exception(f'Load of skill {skill_directory} failed!')
         finally:
             self.skill_loaders[skill_directory] = skill_loader
 
@@ -214,7 +209,7 @@ class SkillManager(Thread):
             if SKILL_MAIN_MODULE in os.listdir(skill_dir):
                 skill_directories.append(skill_dir.rstrip('/'))
             else:
-                LOG.debug('Found skills directory with no skill: ' + skill_dir)
+                LOG.debug(f'Found skills directory with no skill: {skill_dir}')
 
         return skill_directories
 
@@ -227,20 +222,19 @@ class SkillManager(Thread):
         ]
         for skill_dir in removed_skills:
             skill = self.skill_loaders[skill_dir]
-            LOG.info('removing {}'.format(skill.skill_id))
+            LOG.info(f'removing {skill.skill_id}')
             try:
                 skill.unload()
             except Exception:
-                LOG.exception('Failed to shutdown skill ' + skill.id)
+                LOG.exception(f'Failed to shutdown skill {skill.id}')
             del self.skill_loaders[skill_dir]
 
     def _update_skills(self):
         """Update skills once an hour if update is enabled"""
-        do_skill_update = (
-            time() >= self.skill_updater.next_download and
-            self.skills_config["auto_update"]
-        )
-        if do_skill_update:
+        if do_skill_update := (
+            time() >= self.skill_updater.next_download
+            and self.skills_config["auto_update"]
+        ):
             self.skill_updater.update_skills()
 
     def is_alive(self, message=None):
@@ -261,12 +255,13 @@ class SkillManager(Thread):
     def send_skill_list(self, _):
         """Send list of loaded skills."""
         try:
-            message_data = {}
-            for skill_dir, skill_loader in self.skill_loaders.items():
-                message_data[skill_loader.skill_id] = dict(
+            message_data = {
+                skill_loader.skill_id: dict(
                     active=skill_loader.active and skill_loader.loaded,
-                    id=skill_loader.skill_id
+                    id=skill_loader.skill_id,
                 )
+                for skill_dir, skill_loader in self.skill_loaders.items()
+            }
             self.bus.emit(Message('mycroft.skills.list', data=message_data))
         except Exception:
             LOG.exception('Failed to send skill list')
@@ -284,7 +279,7 @@ class SkillManager(Thread):
         """Deactivate all skills except the provided."""
         try:
             skill_to_keep = message.data['skill']
-            LOG.info('Deactivating all skills except {}'.format(skill_to_keep))
+            LOG.info(f'Deactivating all skills except {skill_to_keep}')
             loaded_skill_file_names = [
                 os.path.basename(skill_dir) for skill_dir in self.skill_loaders
             ]
@@ -318,9 +313,7 @@ class SkillManager(Thread):
                 try:
                     skill_loader.instance.default_shutdown()
                 except Exception:
-                    LOG.exception(
-                        'Failed to shut down skill: ' + skill_loader.skill_id
-                    )
+                    LOG.exception(f'Failed to shut down skill: {skill_loader.skill_id}')
 
     def handle_converse_request(self, message):
         """Check if the targeted skill id can handle conversation

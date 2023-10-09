@@ -32,10 +32,7 @@ def find_mime(path):
     if not mime:
         mime = mimetypes.guess_type(path)[0]
 
-    if mime:
-        return mime.split('/')
-    else:
-        return (None, None)
+    return mime.split('/') if mime else (None, None)
 
 
 class SimpleAudioService(AudioBackend):
@@ -68,7 +65,7 @@ class SimpleAudioService(AudioBackend):
 
     def add_list(self, tracks):
         self.tracks += tracks
-        LOG.info("Track list is " + str(tracks))
+        LOG.info(f"Track list is {str(tracks)}")
 
     def _play(self, message):
         """ Implementation specific async method to handle playback.
@@ -97,17 +94,14 @@ class SimpleAudioService(AudioBackend):
         # Replace file:// uri's with normal paths
         track = track.replace('file://', '')
         try:
-            if 'mpeg' in mime[1]:
+            if 'mpeg' in mime[1] or 'ogg' not in mime[1] and 'wav' not in mime[1]:
                 self.process = play_mp3(track)
             elif 'ogg' in mime[1]:
                 self.process = play_ogg(track)
-            elif 'wav' in mime[1]:
-                self.process = play_wav(track)
             else:
-                # If no mime info could be determined guess mp3
-                self.process = play_mp3(track)
+                self.process = play_wav(track)
         except FileNotFoundError as e:
-            LOG.error('Couldn\'t play audio, {}'.format(repr(e)))
+            LOG.error(f"Couldn\'t play audio, {repr(e)}")
             self.process = None
 
         # Wait for completion or stop request
@@ -124,9 +118,11 @@ class SimpleAudioService(AudioBackend):
 
         # if there are more tracks available play next
         self.index += 1
-        if self.index < len(self.tracks) or repeat:
-            if self.index >= len(self.tracks):
-                self.index = 0
+        if self.index < len(self.tracks):
+            self.bus.emit(Message('SimpleAudioServicePlay',
+                                  {'repeat': repeat}))
+        elif repeat:
+            self.index = 0
             self.bus.emit(Message('SimpleAudioServicePlay',
                                   {'repeat': repeat}))
         else:
@@ -219,5 +215,4 @@ def load_service(base_config, bus):
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'simple' and
                 backends[b].get('active', True)]
-    instances = [SimpleAudioService(s[1], bus, s[0]) for s in services]
-    return instances
+    return [SimpleAudioService(s[1], bus, s[0]) for s in services]
