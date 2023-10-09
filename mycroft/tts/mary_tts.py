@@ -50,7 +50,7 @@ class MaryTTSValidator(TTSValidator):
 
     def validate_connection(self):
         try:
-            resp = requests.get(self.tts.url + "/version", verify=False)
+            resp = requests.get(f"{self.tts.url}/version", verify=False)
             if resp.content.find('Mary TTS server') < 0:
                 raise Exception('Invalid MaryTTS server.')
         except Exception:

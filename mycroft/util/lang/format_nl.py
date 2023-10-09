@@ -114,25 +114,16 @@ def nice_number_nl(number, speech, denominators):
         return str(round(number, 3)).replace(".", ",")
     whole, num, den = result
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     den_str = FRACTION_STRING_NL[den]
     if whole == 0:
-        if num == 1:
-            return_string = u'één {}'.format(den_str)
-        else:
-            return_string = '{} {}'.format(num, den_str)
+        return f'één {den_str}' if num == 1 else f'{num} {den_str}'
     elif num == 1:
-        return_string = u'{} en één {}'.format(whole, den_str)
+        return f'{whole} en één {den_str}'
     else:
-        return_string = '{} en {} {}'.format(whole, num, den_str)
-
-    return return_string
+        return f'{whole} en {num} {den_str}'
 
 
 def pronounce_number_nl(num, places=2):
@@ -166,19 +157,19 @@ def pronounce_number_nl(num, places=2):
             if ones > 0:
                 result += NUM_STRING_NL[ones] + EXTRA_SPACE
                 if tens > 0:
-                    result += 'en' + EXTRA_SPACE
+                    result += f'en{EXTRA_SPACE}'
             if tens > 0:
                 result += NUM_STRING_NL[tens] + EXTRA_SPACE
         return result
 
     def pronounce_fractional_nl(num,
-                                places):  # fixed number of places even with
+                                    places):  # fixed number of places even with
         # trailing zeros
         result = ""
         place = 10
         while places > 0:  # doesn't work with 1.0001 and places = 2: int(
             # num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_NL[int(num * place) % 10]
+            result += f" {NUM_STRING_NL[int(num * place) % 10]}"
             if int(num * place) % 10 == 1:
                 result += ''  # "1" is pronounced "eins" after the decimal
                 # point
@@ -196,23 +187,20 @@ def pronounce_number_nl(num, places=2):
 
         if last_triplet == 1:
             if scale_level == 0:
-                if result != '':
-                    result += '' + u'één'
-                else:
-                    result += u"één"
+                result += '' + u'één' if result != '' else u"één"
             elif scale_level == 1:
-                result += u'één' + EXTRA_SPACE + 'duizend' + EXTRA_SPACE
+                result += f'één{EXTRA_SPACE}duizend{EXTRA_SPACE}'
             else:
-                result += u"één " + NUM_POWERS_OF_TEN[scale_level] + ' '
+                result += f"één {NUM_POWERS_OF_TEN[scale_level]} "
         elif last_triplet > 1:
             result += pronounce_triplet_nl(last_triplet)
             if scale_level == 1:
                 # result += EXTRA_SPACE
-                result += 'duizend' + EXTRA_SPACE
+                result += f'duizend{EXTRA_SPACE}'
             if scale_level >= 2:
                 # if EXTRA_SPACE == '':
                 #    result += " "
-                result += " " + NUM_POWERS_OF_TEN[scale_level] + ' '
+                result += f" {NUM_POWERS_OF_TEN[scale_level]} "
             if scale_level >= 2:
                 if scale_level % 2 == 0:
                     result += ""  # Miljioen
@@ -229,36 +217,35 @@ def pronounce_number_nl(num, places=2):
     elif num == 0:
         return str(NUM_STRING_NL[0])
     elif num < 0:
-        return "min " + pronounce_number_nl(abs(num), places)
+        return f"min {pronounce_number_nl(abs(num), places)}"
     else:
         if num == int(num):
             return pronounce_whole_number_nl(num)
-        else:
-            whole_number_part = floor(num)
-            fractional_part = num - whole_number_part
-            result += pronounce_whole_number_nl(whole_number_part)
-            if places > 0:
-                result += " komma"
-                result += pronounce_fractional_nl(fractional_part, places)
-            return result
+        whole_number_part = floor(num)
+        fractional_part = num - whole_number_part
+        result += pronounce_whole_number_nl(whole_number_part)
+        if places > 0:
+            result += " komma"
+            result += pronounce_fractional_nl(fractional_part, places)
+        return result
 
 
 def pronounce_ordinal_nl(num):
-    ordinals = ["nulste", "eerste", "tweede", "derde", "vierde", "vijfde",
-                "zesde", "zevende", "achtste"]
-
     # only for whole positive numbers including zero
     if num < 0 or num != int(num):
         return num
     if num < 4:
+        ordinals = ["nulste", "eerste", "tweede", "derde", "vierde", "vijfde",
+                    "zesde", "zevende", "achtste"]
+
         return ordinals[num]
     if num < 8:
-        return pronounce_number_nl(num) + "de"
+        return f"{pronounce_number_nl(num)}de"
     if num < 9:
-        return pronounce_number_nl(num) + "ste"
+        return f"{pronounce_number_nl(num)}ste"
     if num < 20:
-        return pronounce_number_nl(num) + "de"
-    return pronounce_number_nl(num) + "ste"
+        return f"{pronounce_number_nl(num)}de"
+    return f"{pronounce_number_nl(num)}ste"
 
 
 def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -280,12 +267,7 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -297,10 +279,9 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
     if use_24hour:
         speak += pronounce_number_nl(dt.hour)
         speak += " uur"
-        if not dt.minute == 0:  # zero minutes are not pronounced, 13:00 is
+        if dt.minute != 0:  # zero minutes are not pronounced, 13:00 is
             # "13 uur" not "13 hundred hours"
-            speak += " " + pronounce_number_nl(dt.minute)
-        return speak  # ampm is ignored when use_24hour is true
+            speak += f" {pronounce_number_nl(dt.minute)}"
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "Middernacht"
@@ -338,7 +319,8 @@ def nice_time_nl(dt, speech=True, use_24hour=False, use_ampm=False):
         if use_ampm:
             speak += nice_part_of_day_nl(dt)
 
-        return speak
+
+    return speak  # ampm is ignored when use_24hour is true
 
 
 def fix_hour(hour):

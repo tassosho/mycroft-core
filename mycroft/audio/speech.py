@@ -125,14 +125,14 @@ def mute_and_speak(utterance, ident):
         tts.init(bus)
         tts_hash = hash(str(config.get('tts', '')))
 
-    LOG.info("Speak: " + utterance)
+    LOG.info(f"Speak: {utterance}")
     try:
         tts.execute(utterance, ident)
     except RemoteTTSTimeoutException as e:
         LOG.error(e)
         mimic_fallback_tts(utterance, ident)
     except Exception as e:
-        LOG.error('TTS execution failed ({})'.format(repr(e)))
+        LOG.error(f'TTS execution failed ({repr(e)})')
 
 
 def mimic_fallback_tts(utterance, ident):
@@ -144,7 +144,7 @@ def mimic_fallback_tts(utterance, ident):
     if not mimic_fallback_obj:
         mimic_fallback_obj = Mimic(lang, tts_config)
     tts = mimic_fallback_obj
-    LOG.debug("Mimic fallback, utterance : " + str(utterance))
+    LOG.debug(f"Mimic fallback, utterance : {str(utterance)}")
     tts.init(bus)
     tts.execute(utterance, ident)
 

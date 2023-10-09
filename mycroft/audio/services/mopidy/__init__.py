@@ -109,8 +109,7 @@ class MopidyService(RemoteAudioBackend):
 
     def track_info(self):
         info = self.mopidy.currently_playing()
-        ret = {}
-        ret['name'] = info.get('name', '')
+        ret = {'name': info.get('name', '')}
         if 'album' in info:
             ret['artist'] = info['album']['artists'][0]['name']
             ret['album'] = info['album'].get('name', '')
@@ -125,5 +124,4 @@ def load_service(base_config, bus):
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mopidy' and
                 backends[b].get('active', True)]
-    instances = [MopidyService(s[1], bus, s[0]) for s in services]
-    return instances
+    return [MopidyService(s[1], bus, s[0]) for s in services]

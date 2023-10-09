@@ -47,8 +47,6 @@ class MessageBusEventHandler(WebSocketHandler):
         except Exception as e:
             LOG.exception(e)
             traceback.print_exc(file=sys.stdout)
-            pass
-
         for client in client_connections:
             client.write_message(message)
 

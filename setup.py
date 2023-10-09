@@ -35,9 +35,7 @@ def get_version():
             if ((major and minor and build) or
                     '# END_VERSION_BLOCK' in line):
                 break
-    version = '.'.join([major, minor, build])
-
-    return version
+    return '.'.join([major, minor, build])
 
 
 def required(requirements_file):

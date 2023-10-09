@@ -40,9 +40,7 @@ class STT(metaclass=ABCMeta):
     def init_language(config_core):
         lang = config_core.get("lang", "en-US")
         langs = lang.split("-")
-        if len(langs) == 2:
-            return langs[0].lower() + "-" + langs[1].upper()
-        return lang
+        return f"{langs[0].lower()}-{langs[1].upper()}" if len(langs) == 2 else lang
 
     @abstractmethod
     def execute(self, audio, language=None):

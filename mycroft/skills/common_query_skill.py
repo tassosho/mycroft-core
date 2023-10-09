@@ -71,10 +71,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
                                         "skill_id": self.skill_id,
                                         "searching": True}))
 
-        # Now invoke the CQS handler to let the skill perform its search
-        result = self.CQS_match_query_phrase(search_phrase)
-
-        if result:
+        if result := self.CQS_match_query_phrase(search_phrase):
             match = result[0]
             level = result[1]
             answer = result[2]
@@ -94,9 +91,7 @@ class CommonQuerySkill(MycroftSkill, ABC):
     def __calc_confidence(self, match, phrase, level):
         # Assume the more of the words that get consumed, the better the match
         consumed_pct = len(match.split()) / len(phrase.split())
-        if consumed_pct > 1.0:
-            consumed_pct = 1.0
-
+        consumed_pct = min(consumed_pct, 1.0)
         # Add bonus if match has visuals and the device supports them.
         platform = self.config_core.get('enclosure', {}).get('platform')
         if is_CQSVisualMatchLevel(level) and handles_visuals(platform):

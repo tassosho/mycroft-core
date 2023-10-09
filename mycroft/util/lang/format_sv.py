@@ -111,24 +111,16 @@ def nice_number_sv(number, speech, denominators):
     whole, num, den = result
 
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     den_str = FRACTION_STRING_SV[den]
     if whole == 0:
-        if num == 1:
-            return_string = 'en {}'.format(den_str)
-        else:
-            return_string = '{} {}'.format(num, den_str)
+        return_string = f'en {den_str}' if num == 1 else f'{num} {den_str}'
     elif num == 1:
-        return_string = '{} och en {}'.format(whole, den_str)
+        return_string = f'{whole} och en {den_str}'
     else:
-        return_string = '{} och {} {}'.format(whole, num, den_str)
+        return_string = f'{whole} och {num} {den_str}'
     if num > 1:
         return_string += 'ar'
     return return_string
@@ -156,7 +148,7 @@ def pronounce_number_sv(num, places=2):
                 if hundreds == 1:
                     result += 'ett' + 'hundra'
                 else:
-                    result += NUM_STRING_SV[hundreds] + 'hundra'
+                    result += f'{NUM_STRING_SV[hundreds]}hundra'
 
                 num -= hundreds * 100
 
@@ -184,7 +176,7 @@ def pronounce_number_sv(num, places=2):
         while places > 0:
             # doesn't work with 1.0001 and places = 2: int(
             # num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_SV[int(num * place) % 10]
+            result += f" {NUM_STRING_SV[int(num * place) % 10]}"
             place *= 10
             places -= 1
         return result
@@ -199,22 +191,19 @@ def pronounce_number_sv(num, places=2):
 
         if last_triplet == 1:
             if scale_level == 0:
-                if result != '':
-                    result += '' + 'ett'
-                else:
-                    result += 'en'
+                result += '' + 'ett' if result != '' else 'en'
             elif scale_level == 1:
-                result += 'ettusen' + EXTRA_SPACE
+                result += f'ettusen{EXTRA_SPACE}'
             else:
-                result += 'en ' + NUM_POWERS_OF_TEN[scale_level] + EXTRA_SPACE
+                result += f'en {NUM_POWERS_OF_TEN[scale_level]}{EXTRA_SPACE}'
         elif last_triplet > 1:
             result += pronounce_triplet_sv(last_triplet)
             if scale_level == 1:
-                result += 'tusen' + EXTRA_SPACE
+                result += f'tusen{EXTRA_SPACE}'
             if scale_level >= 2:
                 result += NUM_POWERS_OF_TEN[scale_level]
             if scale_level >= 2:
-                result += 'er' + EXTRA_SPACE  # MiljonER
+                result += f'er{EXTRA_SPACE}'
 
         num = floor(num / 1000)
         scale_level += 1
@@ -226,18 +215,17 @@ def pronounce_number_sv(num, places=2):
     elif num == 0:
         return str(NUM_STRING_SV[0])
     elif num < 0:
-        return "minus " + pronounce_number_sv(abs(num), places)
+        return f"minus {pronounce_number_sv(abs(num), places)}"
     else:
         if num == int(num):
             return pronounce_whole_number_sv(num)
-        else:
-            whole_number_part = floor(num)
-            fractional_part = num - whole_number_part
-            result += pronounce_whole_number_sv(whole_number_part)
-            if places > 0:
-                result += " komma"
-                result += pronounce_fractional_sv(fractional_part, places)
-            return result
+        whole_number_part = floor(num)
+        fractional_part = num - whole_number_part
+        result += pronounce_whole_number_sv(whole_number_part)
+        if places > 0:
+            result += " komma"
+            result += pronounce_fractional_sv(fractional_part, places)
+        return result
 
 
 def pronounce_ordinal_sv(num):
@@ -260,11 +248,7 @@ def pronounce_ordinal_sv(num):
     if num > 10:
         result += pronounce_number_sv(tens).rstrip()
 
-    if ones > 0:
-        result += ordinals[ones]
-    else:
-        result += 'de'
-
+    result += ordinals[ones] if ones > 0 else 'de'
     return result
 
 
@@ -287,58 +271,36 @@ def nice_time_sv(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
-
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
     if not speech:
         return string
 
     # Generate a speakable version of the time
     speak = ""
     if use_24hour:
-        if dt.hour == 1:
-            speak += "ett"  # 01:00 is "ett" not "en"
-        else:
-            speak += pronounce_number_sv(dt.hour)
-        if not dt.minute == 0:
+        speak += "ett" if dt.hour == 1 else pronounce_number_sv(dt.hour)
+        if dt.minute != 0:
             if dt.minute < 10:
                 speak += ' noll'
 
-            if dt.minute == 1:
-                speak += ' ett'
-            else:
-                speak += " " + pronounce_number_sv(dt.minute)
-
-        return speak  # ampm is ignored when use_24hour is true
+            speak += ' ett' if dt.minute == 1 else f" {pronounce_number_sv(dt.minute)}"
     else:
         hour = dt.hour
 
-        if not dt.minute == 0:
+        if dt.minute != 0:
             if dt.minute < 30:
-                if dt.minute != 15:
-                    speak += pronounce_number_sv(dt.minute)
-                else:
-                    speak += 'kvart'
-
+                speak += pronounce_number_sv(dt.minute) if dt.minute != 15 else 'kvart'
                 if dt.minute == 1:
                     speak += ' minut över '
-                elif dt.minute != 10 and dt.minute != 5 and dt.minute != 15:
+                elif dt.minute not in [10, 5, 15]:
                     speak += ' minuter över '
                 else:
                     speak += ' över '
             elif dt.minute > 30:
-                if dt.minute != 45:
-                    speak += pronounce_number_sv((60 - dt.minute))
-                else:
-                    speak += 'kvart'
-
+                speak += pronounce_number_sv((60 - dt.minute)) if dt.minute != 45 else 'kvart'
                 if dt.minute == 1:
                     speak += ' minut i '
-                elif dt.minute != 50 and dt.minute != 55 and dt.minute != 45:
+                elif dt.minute not in [50, 55, 45]:
                     speak += ' minuter i '
                 else:
                     speak += ' i '
@@ -357,32 +319,26 @@ def nice_time_sv(dt, speech=True, use_24hour=False, use_ampm=False):
         if hour == 0:
             speak += pronounce_number_sv(12)
         elif hour <= 13:
-            if hour == 1 or hour == 13:  # 01:00 and 13:00 is "ett"
-                speak += 'ett'
-            else:
-                speak += pronounce_number_sv(hour)
+            speak += 'ett' if hour in [1, 13] else pronounce_number_sv(hour)
         else:
             speak += pronounce_number_sv(hour - 12)
 
         if use_ampm:
-            if dt.hour > 11:
-                if dt.hour < 18:
-                    # 12:01 - 17:59 nachmittags/afternoon
-                    speak += " på eftermiddagen"
-                elif dt.hour < 22:
-                    # 18:00 - 21:59 abends/evening
-                    speak += " på kvällen"
-                else:
-                    # 22:00 - 23:59 nachts/at night
-                    speak += " på natten"
-            elif dt.hour < 3:
-                # 00:01 - 02:59 nachts/at night
+            if dt.hour > 11 and dt.hour < 18:
+                # 12:01 - 17:59 nachmittags/afternoon
+                speak += " på eftermiddagen"
+            elif dt.hour > 11 and dt.hour < 22:
+                # 18:00 - 21:59 abends/evening
+                speak += " på kvällen"
+            elif dt.hour > 11 or dt.hour < 3:
+                # 22:00 - 23:59 nachts/at night
                 speak += " på natten"
             else:
                 # 03:00 - 11:59 morgens/in the morning
                 speak += " på morgonen"
 
-        return speak
+
+    return speak  # ampm is ignored when use_24hour is true
 
 
 def nice_response_sv(text):

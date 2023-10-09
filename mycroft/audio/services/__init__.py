@@ -139,10 +139,7 @@ class AudioBackend(metaclass=ABCMeta):
             Returns:
                 Dict with track info.
         """
-        ret = {}
-        ret['artist'] = ''
-        ret['album'] = ''
-        return ret
+        return {'artist': '', 'album': ''}
 
     def shutdown(self):
         """ Perform clean shutdown """

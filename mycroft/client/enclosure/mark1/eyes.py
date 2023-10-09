@@ -50,7 +50,7 @@ class EnclosureEyes:
         side = "b"
         if event and event.data:
             side = event.data.get("side", side)
-        self.writer.write("eyes.blink=" + side)
+        self.writer.write(f"eyes.blink={side}")
 
     def narrow(self, event=None):
         self.writer.write("eyes.narrow")
@@ -58,7 +58,7 @@ class EnclosureEyes:
     def look(self, event=None):
         if event and event.data:
             side = event.data.get("side", "")
-            self.writer.write("eyes.look=" + side)
+            self.writer.write(f"eyes.look={side}")
 
     def color(self, event=None):
         r, g, b = 255, 255, 255
@@ -67,7 +67,7 @@ class EnclosureEyes:
             g = int(event.data.get("g", g))
             b = int(event.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
-        self.writer.write("eyes.color=" + str(color))
+        self.writer.write(f"eyes.color={str(color)}")
 
     def set_pixel(self, event=None):
         idx = 0
@@ -78,26 +78,26 @@ class EnclosureEyes:
             g = int(event.data.get("g", g))
             b = int(event.data.get("b", b))
         color = (r * 65536) + (g * 256) + b
-        self.writer.write("eyes.set=" + str(idx) + "," + str(color))
+        self.writer.write(f"eyes.set={idx},{str(color)}")
 
     def fill(self, event=None):
         amount = 0
         if event and event.data:
             percent = int(event.data.get("percentage", 0))
             amount = int(round(23.0 * percent / 100.0))
-        self.writer.write("eyes.fill=" + str(amount))
+        self.writer.write(f"eyes.fill={amount}")
 
     def brightness(self, event=None):
         level = 30
         if event and event.data:
             level = event.data.get("level", level)
-        self.writer.write("eyes.level=" + str(level))
+        self.writer.write(f"eyes.level={str(level)}")
 
     def volume(self, event=None):
         volume = 4
         if event and event.data:
             volume = event.data.get("volume", volume)
-        self.writer.write("eyes.volume=" + str(volume))
+        self.writer.write(f"eyes.volume={str(volume)}")
 
     def reset(self, event=None):
         self.writer.write("eyes.reset")
@@ -109,4 +109,4 @@ class EnclosureEyes:
         length = 5000
         if event and event.data:
             length = event.data.get("length", length)
-        self.writer.write("eyes.spin=" + str(length))
+        self.writer.write(f"eyes.spin={str(length)}")

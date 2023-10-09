@@ -134,9 +134,8 @@ class Mimic(TTS):
 
         args = [mimic_bin, '-voice', voice, '-psdur', '-ssml']
 
-        stretch = config.get('duration_stretch', None)
-        if stretch:
-            args += ['--setf', 'duration_stretch=' + stretch]
+        if stretch := config.get('duration_stretch', None):
+            args += ['--setf', f'duration_stretch={stretch}']
         return args
 
     def get_tts(self, sentence, wav_file):
@@ -169,7 +168,7 @@ class MimicValidator(TTSValidator):
         try:
             subprocess.call([BIN, '--version'])
         except Exception:
-            LOG.info("Failed to find mimic at: " + BIN)
+            LOG.info(f"Failed to find mimic at: {BIN}")
             raise Exception(
                 'Mimic was not found. Run install-mimic.sh to install it.')
 

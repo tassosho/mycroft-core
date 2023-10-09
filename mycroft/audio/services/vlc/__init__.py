@@ -50,7 +50,7 @@ class VlcService(AudioBackend):
         self.list_player.set_media_list(self.track_list)
 
     def add_list(self, tracks):
-        LOG.debug("Track list is " + str(tracks))
+        LOG.debug(f"Track list is {str(tracks)}")
         for t in tracks:
             self.track_list.add_media(self.instance.media_new(t))
 
@@ -112,10 +112,9 @@ class VlcService(AudioBackend):
 
     def track_info(self):
         """ Extract info of current track. """
-        ret = {}
         meta = vlc.Meta
         t = self.player.get_media()
-        ret['album'] = t.get_meta(meta.Album)
+        ret = {'album': t.get_meta(meta.Album)}
         ret['artists'] = [t.get_meta(meta.Artist)]
         ret['name'] = t.get_meta(meta.Title)
         return ret
@@ -130,8 +129,7 @@ class VlcService(AudioBackend):
         seconds = seconds * 1000
         new_time = self.player.get_time() + seconds
         duration = self.player.get_length()
-        if new_time > duration:
-            new_time = duration
+        new_time = min(new_time, duration)
         self.player.set_time(new_time)
 
     def seek_backward(self, seconds=1):
@@ -143,8 +141,7 @@ class VlcService(AudioBackend):
         """
         seconds = seconds * 1000
         new_time = self.player.get_time() - seconds
-        if new_time < 0:
-            new_time = 0
+        new_time = max(new_time, 0)
         self.player.set_time(new_time)
 
 
@@ -153,5 +150,4 @@ def load_service(base_config, bus):
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'vlc' and
                 backends[b].get('active', True)]
-    instances = [VlcService(s[1], bus, s[0]) for s in services]
-    return instances
+    return [VlcService(s[1], bus, s[0]) for s in services]

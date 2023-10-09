@@ -109,18 +109,12 @@ def extractnumber_de(text):
             val = isFractional_de(word)
         elif isOrdinal_de(word):
             val = isOrdinal_de(word)
-        else:
-            if word in de_numbers:
-                val = de_numbers[word]
-                if count < (len(aWords) - 1):
-                    wordNext = aWords[count + 1]
-                else:
-                    wordNext = ""
-                valNext = isFractional_de(wordNext)
-
-                if valNext:
-                    val = val * valNext
-                    aWords[count + 1] = ""
+        elif word in de_numbers:
+            val = de_numbers[word]
+            wordNext = aWords[count + 1] if count < (len(aWords) - 1) else ""
+            if valNext := isFractional_de(wordNext):
+                val = val * valNext
+                aWords[count + 1] = ""
 
         if not val:
             # look for fractions like "2/3"
@@ -157,10 +151,7 @@ def extractnumber_de(text):
 
         break
 
-    if not val:
-        return False
-
-    return val
+    return False if not val else val
 
 
 def extract_datetime_de(string, currentDate, default_time):

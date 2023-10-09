@@ -42,10 +42,11 @@ def read_vocab_file(path):
     """
     vocab = []
     with open(path, 'r', encoding='utf8') as voc_file:
-        for line in voc_file.readlines():
-            if line.startswith('#') or line.strip() == '':
-                continue
-            vocab.append(expand_options(line.lower()))
+        vocab.extend(
+            expand_options(line.lower())
+            for line in voc_file
+            if not line.startswith('#') and line.strip() != ''
+        )
     return vocab
 
 
@@ -60,7 +61,7 @@ def load_regex_from_file(path, skill_id):
     regexes = []
     if path.endswith('.rx'):
         with open(path, 'r', encoding='utf8') as reg_file:
-            for line in reg_file.readlines():
+            for line in reg_file:
                 if line.startswith("#"):
                     continue
                 regex = munge_regex(line.strip(), skill_id)
@@ -85,8 +86,7 @@ def load_vocabulary(basedir, skill_id):
         for f in files:
             if f.endswith(".voc"):
                 vocab_type = to_alnum(skill_id) + splitext(f)[0]
-                vocs = read_vocab_file(join(path, f))
-                if vocs:
+                if vocs := read_vocab_file(join(path, f)):
                     vocabs[vocab_type] = vocs
     return vocabs
 
@@ -130,7 +130,7 @@ def munge_regex(regex, skill_id):
     Returns:
         (str) munged regex
     """
-    base = '(?P<' + to_alnum(skill_id)
+    base = f'(?P<{to_alnum(skill_id)}'
     return base.join(regex.split('(?P<'))
 
 
@@ -149,8 +149,8 @@ def munge_intent_parser(intent_parser, name, skill_id):
         skill_id: (int) skill identifier
     """
     # Munge parser name
-    if not name.startswith(str(skill_id) + ':'):
-        intent_parser.name = str(skill_id) + ':' + name
+    if not name.startswith(f'{str(skill_id)}:'):
+        intent_parser.name = f'{str(skill_id)}:{name}'
     else:
         intent_parser.name = name
 

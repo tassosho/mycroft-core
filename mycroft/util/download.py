@@ -23,17 +23,16 @@ _running_downloads = {}
 
 
 def _get_download_tmp(dest):
-    tmp_base = dest + '.part'
+    tmp_base = f'{dest}.part'
     if not exists(tmp_base):
         return tmp_base
-    else:
-        i = 1
-        while(True):
-            tmp = tmp_base + '.' + str(i)
-            if not exists(tmp):
-                return tmp
-            else:
-                i += 1
+    i = 1
+    while True:
+        tmp = f'{tmp_base}.{str(i)}'
+        if not exists(tmp):
+            return tmp
+        else:
+            i += 1
 
 
 class Downloader(Thread):
@@ -75,7 +74,7 @@ class Downloader(Thread):
         cmd = ['wget', '-c', self.url, '-O', dest,
                '--tries=20', '--read-timeout=5']
         if self.header:
-            cmd += ['--header={}'.format(self.header)]
+            cmd += [f'--header={self.header}']
         return subprocess.call(cmd)
 
     def run(self):
@@ -110,7 +109,7 @@ class Downloader(Thread):
             Cleanup after download attempt
         """
         if exists(tmp):
-            os.remove(self.dest + '.part')
+            os.remove(f'{self.dest}.part')
         if self.status == 200:
             self.status = -1
 

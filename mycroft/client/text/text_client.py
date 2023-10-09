@@ -193,14 +193,15 @@ def load_settings():
 
 
 def save_settings():
-    config = {}
-    config["filters"] = log_filters
-    config["cy_chat_area"] = cy_chat_area
-    config["show_last_key"] = show_last_key
-    config["max_log_lines"] = max_log_lines
-    config["show_meter"] = show_meter
+    config = {
+        "filters": log_filters,
+        "cy_chat_area": cy_chat_area,
+        "show_last_key": show_last_key,
+        "max_log_lines": max_log_lines,
+        "show_meter": show_meter,
+    }
     with io.open(config_file, 'w') as f:
-        f.write(str(json.dumps(config, ensure_ascii=False)))
+        f.write(json.dumps(config, ensure_ascii=False))
 
 
 ##############################################################################
@@ -221,7 +222,7 @@ class LogMonitorThread(Thread):
                 st_results = os.stat(self.filename)
 
                 # Check if file has been modified since last read
-                if not st_results.st_mtime == self.st_results.st_mtime:
+                if st_results.st_mtime != self.st_results.st_mtime:
                     self.read_file_from(self.st_results.st_size)
                     self.st_results = st_results
 
@@ -260,14 +261,13 @@ class LogMonitorThread(Thread):
                 with log_lock:
                     if ignore:
                         mergedLog.append(self.logid + line.rstrip())
+                    elif bSimple:
+                        print(line.rstrip())
                     else:
-                        if bSimple:
-                            print(line.rstrip())
-                        else:
-                            filteredLog.append(self.logid + line.rstrip())
-                            mergedLog.append(self.logid + line.rstrip())
-                            if not auto_scroll:
-                                log_line_offset += 1
+                        filteredLog.append(self.logid + line.rstrip())
+                        mergedLog.append(self.logid + line.rstrip())
+                        if not auto_scroll:
+                            log_line_offset += 1
 
         # Limit log to  max_log_lines
         if len(mergedLog) >= max_log_lines:
@@ -300,9 +300,11 @@ class MicMonitorThread(Thread):
             try:
                 st_results = os.stat(self.filename)
 
-                if (not self.st_results or
-                        not st_results.st_ctime == self.st_results.st_ctime or
-                        not st_results.st_mtime == self.st_results.st_mtime):
+                if (
+                    not self.st_results
+                    or st_results.st_ctime != self.st_results.st_ctime
+                    or st_results.st_mtime != self.st_results.st_mtime
+                ):
                     self.read_mic_level()
                     self.st_results = st_results
                     set_screen_dirty()
@@ -367,7 +369,7 @@ def add_log_message(message):
     global log_lock
 
     with log_lock:
-        message = "@" + message       # the first byte is a code
+        message = f"@{message}"
         filteredLog.append(message)
         mergedLog.append(message)
 
@@ -422,9 +424,9 @@ def handle_speak(event):
     utterance = event.data.get('utterance')
     utterance = TTS.remove_ssml(utterance)
     if bSimple:
-        print(">> " + utterance)
+        print(f">> {utterance}")
     else:
-        chat.append(">> " + utterance)
+        chat.append(f">> {utterance}")
     set_screen_dirty()
 
 
@@ -552,8 +554,7 @@ def scroll_log(up, num_lines=None):
             log_line_offset += num_lines
         if log_line_offset > len(filteredLog):
             log_line_offset = len(filteredLog) - 10
-        if log_line_offset < 0:
-            log_line_offset = 0
+        log_line_offset = max(log_line_offset, 0)
     set_screen_dirty()
 
 
@@ -578,8 +579,7 @@ def _do_meter(height):
         meter_peak = meter_cur + 1
 
     scale = meter_peak
-    if meter_peak > meter_thresh * 3:
-        scale = meter_thresh * 3
+    scale = min(scale, meter_thresh * 3)
     h_cur = clamp(int((float(meter_cur) / scale) * height), 0, height - 1)
     h_thresh = clamp(
         int((float(meter_thresh) / scale) * height), 0, height - 1)
@@ -590,21 +590,15 @@ def _do_meter(height):
     meter_width = len(str_level) + len(str_thresh) + 4
     for i in range(0, height):
         meter = ""
-        if i == h_cur:
-            # current energy level
-            meter = str_level
-        else:
-            meter = " " * len(str_level)
-
+        meter = str_level if i == h_cur else " " * len(str_level)
         if i == h_thresh:
             # add threshold indicator
             meter += "--- "
-        else:
-            meter += "    "
-
-        if i == h_thresh:
             # 'silence' threshold energy level
             meter += str_thresh
+
+        else:
+            meter += "    "
 
         # draw the line
         meter += " " * (meter_width - len(meter))
@@ -627,8 +621,7 @@ def _do_gui(gui_width):
     y = 3
     draw(x, y, " "+make_titlebar("= GUI", gui_width-1)+" ", clr=CLR_HEADING)
     cnt = len(gui_text)+1
-    if cnt > curses.LINES-15:
-        cnt = curses.LINES-15
+    cnt = min(cnt, curses.LINES-15)
     for i in range(0, cnt):
         draw(x, y+1+i, " !", clr=CLR_HEADING)
         if i < len(gui_text):

@@ -64,11 +64,8 @@ class ChromecastService(RemoteAudioBackend):
 
     def supported_uris(self):
         """ Return supported uris of chromecast. """
-        LOG.info("Chromecasts found: " + str(self.cast))
-        if self.cast:
-            return ['http', 'https']
-        else:
-            return []
+        LOG.info(f"Chromecasts found: {str(self.cast)}")
+        return ['http', 'https'] if self.cast else []
 
     def clear_list(self):
         """ Clear tracklist. """
@@ -82,7 +79,6 @@ class ChromecastService(RemoteAudioBackend):
                 tracks (list): list media to add to playlist.
         """
         self.tracklist = tracks
-        pass
 
     def play(self, repeat=False):
         """ Start playback.
@@ -98,7 +94,7 @@ class ChromecastService(RemoteAudioBackend):
         # Report start of playback to audioservice
         if self._track_start_callback:
             self._track_start_callback(track)
-        LOG.debug('track: {}, type: {}'.format(track, guess_type(track)[0]))
+        LOG.debug(f'track: {track}, type: {guess_type(track)[0]}')
         mime = guess_type(track)[0] or 'audio/mp3'
         self.cast.wait()  # Make sure the device is ready to receive command
         self.cast.play_media(track, mime)
@@ -140,8 +136,7 @@ class ChromecastService(RemoteAudioBackend):
     def track_info(self):
         """ Return info about currently playing track. """
         info = {}
-        ret = {}
-        ret['name'] = info.get('name', '')
+        ret = {'name': info.get('name', '')}
         if 'album' in info:
             ret['artist'] = info['album']['artists'][0]['name']
             ret['album'] = info['album'].get('name', '')
@@ -162,7 +157,7 @@ def autodetect(config, bus):
     casts = pychromecast.get_chromecasts(timeout=5, tries=2, retry_wait=2)
     ret = []
     for c in casts:
-        LOG.info(c.name + " found.")
+        LOG.info(f"{c.name} found.")
         ret.append(ChromecastService(config, bus, c.name.lower(), c))
 
     return ret

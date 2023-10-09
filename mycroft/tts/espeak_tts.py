@@ -23,8 +23,7 @@ class ESpeak(TTS):
 
     def execute(self, sentence, ident=None):
         self.begin_audio()
-        subprocess.call(
-            ['espeak', '-v', self.lang + '+' + self.voice, sentence])
+        subprocess.call(['espeak', '-v', f'{self.lang}+{self.voice}', sentence])
         self.end_audio()
 
 

@@ -200,38 +200,23 @@ def nice_number_it(number, speech, denominators):
     whole, num, den = result
 
     if not speech:
-        if num == 0:
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     # denominatore
     den_str = FRACTION_STRING_IT[den]
     # frazione
     if whole == 0:
-        if num == 1:
-            # un decimo
-            return_string = 'un {}'.format(den_str)
-        else:
-            # tre mezzi
-            return_string = '{} {}'.format(num, den_str)
-    # interi  >10
+        return_string = f'un {den_str}' if num == 1 else f'{num} {den_str}'
     elif num == 1:
         # trenta e un
-        return_string = '{} e un {}'.format(whole, den_str)
-    # interi >10 con frazioni
+        return_string = f'{whole} e un {den_str}'
     else:
         # venti e 3 decimi
-        return_string = '{} e {} {}'.format(whole, num, den_str)
+        return_string = f'{whole} e {num} {den_str}'
 
     # gestisce il plurale del denominatore
-    if num > 1:
-        return_string += 'i'
-    else:
-        return_string += 'o'
-
+    return_string += 'i' if num > 1 else 'o'
     return return_string
 
 
@@ -306,18 +291,14 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
                 _unit = r
                 _partial = _deci
                 if _unit > 0:
-                    if _unit == 1 or _unit == 8:
+                    if _unit in [1, 8]:
                         _partial = _partial[:-1]  # ventuno  ventotto
                     _partial += number_names[_unit]
                 return _partial
             else:
                 q, r = divmod(n, 100)
-                if q == 1:
-                    _partial = "cento"
-                else:
-                    _partial = digits[q] + "cento"
-                _partial += (
-                    " " + _sub_thousand(r) if r else "")  # separa centinaia
+                _partial = "cento" if q == 1 else f"{digits[q]}cento"
+                _partial += f" {_sub_thousand(r)}" if r else ""
                 return _partial
 
         def _short_scale(n):
@@ -360,15 +341,11 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
                     # plus one as we skip 'thousand'
                     # (and 'hundred', but this is excluded by index value)
                     number = number.replace(',', '')
-                    number += " " + hundreds[i+1]
+                    number += f" {hundreds[i + 1]}"
                 res.append(number)
             return ", ".join(reversed(res))
 
-        if short_scale:
-            result += _short_scale(num)
-        else:
-            result += _long_scale(num)
-
+        result += _short_scale(num) if short_scale else _long_scale(num)
     # normalizza unità misura singole e 'ragionevoli' ed ad inizio stringa
     if result == 'mila':
         result = 'mille'
@@ -376,19 +353,19 @@ def pronounce_number_it(num, places=2, short_scale=False, scientific=False):
         result = 'un milione'
     if result == 'miliardi':
         result = 'un miliardo'
-    if result[0:7] == 'unomila':
+    if result[:7] == 'unomila':
         result = result.replace('unomila', 'mille', 1)
-    if result[0:10] == 'unomilioni':
+    if result[:10] == 'unomilioni':
         result = result.replace('unomilioni', 'un milione', 1)
     # if result[0:11] == 'unomiliardi':
     # result = result.replace('unomiliardi', 'un miliardo', 1)
 
     # Deal with fractional part
-    if not num == int(num) and places > 0:
+    if num != int(num) and places > 0:
         result += " virgola"
         place = 10
         while int(num * place) % 10 > 0 and places > 0:
-            result += " " + number_names[int(num * place) % 10]
+            result += f" {number_names[int(num * place) % 10]}"
             place *= 10
             places -= 1
     return result
@@ -414,12 +391,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -430,29 +402,27 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
     if use_24hour:
         speak = ""
         # Either "zero 8 zerozero" o "13 zerozero"
-        if string[0:2] == '00':
+        if string[:2] == '00':
             speak += "zerozero"
         elif string[0] == '0':
-            speak += pronounce_number_it(int(string[0])) + " "
+            speak += f"{pronounce_number_it(int(string[0]))} "
             if int(string[1]) == 1:
                 speak = "una"
             else:
                 speak += pronounce_number_it(int(string[1]))
         else:
-            speak = pronounce_number_it(int(string[0:2]))
+            speak = pronounce_number_it(int(string[:2]))
 
         # in italian  "13 e 25"
         speak += " e "
 
         if string[3:5] == '00':
             speak += "zerozero"
+        elif string[3] == '0':
+            speak += f"{pronounce_number_it(0)} "
+            speak += pronounce_number_it(int(string[4]))
         else:
-            if string[3] == '0':
-                speak += pronounce_number_it(0) + " "
-                speak += pronounce_number_it(int(string[4]))
-            else:
-                speak += pronounce_number_it(int(string[3:5]))
-        return speak
+            speak += pronounce_number_it(int(string[3:5]))
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "mezzanotte"
@@ -462,7 +432,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
 
         if dt.hour == 0:
             speak = "mezzanotte"
-        elif dt.hour == 1 or dt.hour == 13:
+        elif dt.hour in [1, 13]:
             speak = "una"
         elif dt.hour > 13:  # era minore
             speak = pronounce_number_it(dt.hour-12)
@@ -481,7 +451,7 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
         else:
             if dt.minute < 10:
                 speak += " zero"
-            speak += " " + pronounce_number_it(dt.minute)
+            speak += f" {pronounce_number_it(dt.minute)}"
 
         if use_ampm:
 
@@ -496,4 +466,5 @@ def nice_time_it(dt, speech=True, use_24hour=False, use_ampm=False):
             else:
                 speak += " della mattina"
 
-        return speak
+
+    return speak

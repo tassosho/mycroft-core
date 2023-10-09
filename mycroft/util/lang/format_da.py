@@ -115,26 +115,16 @@ def nice_number_da(number, speech, denominators):
         return str(round(number, 3)).replace(".", ",")
     whole, num, den = result
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     den_str = FRACTION_STRING_DA[den]
     if whole == 0:
-        if num == 1:
-            return_string = '{} {}'.format(num, den_str)
-        else:
-            return_string = '{} {}e'.format(num, den_str)
+        return f'{num} {den_str}' if num == 1 else f'{num} {den_str}e'
+    elif num == 1:
+        return f'{whole} og {num} {den_str}'
     else:
-        if num == 1:
-            return_string = '{} og {} {}'.format(whole, num, den_str)
-        else:
-            return_string = '{} og {} {}e'.format(whole, num, den_str)
-
-    return return_string
+        return f'{whole} og {num} {den_str}e'
 
 
 def pronounce_number_da(num, places=2):
@@ -173,7 +163,7 @@ def pronounce_number_da(num, places=2):
             if ones > 0:
                 result += NUM_STRING_DA[ones] + EXTRA_SPACE
                 if tens > 0:
-                    result += 'og' + EXTRA_SPACE
+                    result += f'og{EXTRA_SPACE}'
             if tens > 0:
                 result += NUM_STRING_DA[tens] + EXTRA_SPACE
 
@@ -186,7 +176,7 @@ def pronounce_number_da(num, places=2):
         while places > 0:
             # doesn't work with 1.0001 and places = 2: int(
             # num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_DA[int(num * place) % 10]
+            result += f" {NUM_STRING_DA[int(num * place) % 10]}"
             place *= 10
             places -= 1
         return result
@@ -201,20 +191,17 @@ def pronounce_number_da(num, places=2):
 
         if last_triplet == 1:
             if scale_level == 0:
-                if result != '':
-                    result += '' + 'et'
-                else:
-                    result += "en"
+                result += '' + 'et' if result != '' else "en"
             elif scale_level == 1:
-                result += 'et' + EXTRA_SPACE + 'tusinde' + EXTRA_SPACE
+                result += f'et{EXTRA_SPACE}tusinde{EXTRA_SPACE}'
             else:
-                result += "en " + NUM_POWERS_OF_TEN[scale_level] + ' '
+                result += f"en {NUM_POWERS_OF_TEN[scale_level]} "
         elif last_triplet > 1:
             result += pronounce_triplet_da(last_triplet)
             if scale_level == 1:
-                result += 'tusinde' + EXTRA_SPACE
+                result += f'tusinde{EXTRA_SPACE}'
             if scale_level >= 2:
-                result += "og" + NUM_POWERS_OF_TEN[scale_level]
+                result += f"og{NUM_POWERS_OF_TEN[scale_level]}"
             if scale_level >= 2:
                 if scale_level % 2 == 0:
                     result += "er"  # MillionER
@@ -231,45 +218,43 @@ def pronounce_number_da(num, places=2):
     elif num == 0:
         return str(NUM_STRING_DA[0])
     elif num < 0:
-        return "minus " + pronounce_number_da(abs(num), places)
+        return f"minus {pronounce_number_da(abs(num), places)}"
     else:
         if num == int(num):
             return pronounce_whole_number_da(num)
-        else:
-            whole_number_part = floor(num)
-            fractional_part = num - whole_number_part
-            result += pronounce_whole_number_da(whole_number_part)
-            if places > 0:
-                result += " komma"
-                result += pronounce_fractional_da(fractional_part, places)
-            return result
+        whole_number_part = floor(num)
+        fractional_part = num - whole_number_part
+        result += pronounce_whole_number_da(whole_number_part)
+        if places > 0:
+            result += " komma"
+            result += pronounce_fractional_da(fractional_part, places)
+        return result
 
 
 def pronounce_ordinal_da(num):
-    # ordinals for 1, 3, 7 and 8 are irregular
-    # this produces the base form, it will have to be adapted for genus,
-    # casus, numerus
-
-    ordinals = ["nulte", "første", "anden", "tredie", "fjerde", "femte",
-                "sjette", "syvende", "ottende", "niende", "tiende"]
-
     # only for whole positive numbers including zero
     if num < 0 or num != int(num):
         return num
     if num < 10:
+        # ordinals for 1, 3, 7 and 8 are irregular
+        # this produces the base form, it will have to be adapted for genus,
+        # casus, numerus
+
+        ordinals = ["nulte", "første", "anden", "tredie", "fjerde", "femte",
+                    "sjette", "syvende", "ottende", "niende", "tiende"]
+
         return ordinals[num]
     if num < 30:
         if pronounce_number_da(num)[-1:] == 'e':
-            return pronounce_number_da(num) + "nde"
+            return f"{pronounce_number_da(num)}nde"
         else:
-            return pronounce_number_da(num) + "ende"
+            return f"{pronounce_number_da(num)}ende"
     if num < 40:
-        return pronounce_number_da(num) + "fte"
+        return f"{pronounce_number_da(num)}fte"
+    if pronounce_number_da(num)[-1:] == 'e':
+        return f"{pronounce_number_da(num)}nde"
     else:
-        if pronounce_number_da(num)[-1:] == 'e':
-            return pronounce_number_da(num) + "nde"
-        else:
-            return pronounce_number_da(num) + "ende"
+        return f"{pronounce_number_da(num)}ende"
 
 
 def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
@@ -291,29 +276,19 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
-
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
     if not speech:
         return string
 
     # Generate a speakable version of the time
     speak = ""
     if use_24hour:
-        if dt.hour == 1:
-            speak += "et"  # 01:00 is "et" not "en"
-        else:
-            speak += pronounce_number_da(dt.hour)
-        if not dt.minute == 0:
+        speak += "et" if dt.hour == 1 else pronounce_number_da(dt.hour)
+        if dt.minute != 0:
             if dt.minute < 10:
                 speak += ' nul'
-            speak += " " + pronounce_number_da(dt.minute)
+            speak += f" {pronounce_number_da(dt.minute)}"
 
-        return speak  # ampm is ignored when use_24hour is true
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "midnat"
@@ -324,37 +299,31 @@ def nice_time_da(dt, speech=True, use_24hour=False, use_ampm=False):
         if dt.hour == 0:
             speak += pronounce_number_da(12)
         elif dt.hour <= 13:
-            if dt.hour == 1 or dt.hour == 13:  # 01:00 and 13:00 is "et"
-                speak += 'et'
-            else:
-                speak += pronounce_number_da(dt.hour)
+            speak += 'et' if dt.hour in [1, 13] else pronounce_number_da(dt.hour)
         else:
             speak += pronounce_number_da(dt.hour - 12)
 
-        if not dt.minute == 0:
+        if dt.minute != 0:
             if dt.minute < 10:
                 speak += ' nul'
-            speak += " " + pronounce_number_da(dt.minute)
+            speak += f" {pronounce_number_da(dt.minute)}"
 
         if use_ampm:
-            if dt.hour > 11:
-                if dt.hour < 18:
-                    # 12:01 - 17:59 nachmittags/afternoon
-                    speak += " om eftermiddagen"
-                elif dt.hour < 22:
-                    # 18:00 - 21:59 abends/evening
-                    speak += " om aftenen"
-                else:
-                    # 22:00 - 23:59 nachts/at night
-                    speak += " om natten"
-            elif dt.hour < 3:
-                # 00:01 - 02:59 nachts/at night
+            if dt.hour > 11 and dt.hour < 18:
+                # 12:01 - 17:59 nachmittags/afternoon
+                speak += " om eftermiddagen"
+            elif dt.hour > 11 and dt.hour < 22:
+                # 18:00 - 21:59 abends/evening
+                speak += " om aftenen"
+            elif dt.hour > 11 or dt.hour < 3:
+                # 22:00 - 23:59 nachts/at night
                 speak += " om natten"
             else:
                 # 03:00 - 11:59 morgens/in the morning
                 speak += " om morgenen"
 
-        return speak
+
+    return speak  # ampm is ignored when use_24hour is true
 
 
 def nice_response_da(text):

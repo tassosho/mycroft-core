@@ -43,24 +43,16 @@ def nice_number_en(number, speech, denominators):
     whole, num, den = result
 
     if not speech:
-        if num == 0:
-            # TODO: Number grouping?  E.g. "1,000,000"
-            return str(whole)
-        else:
-            return '{} {}/{}'.format(whole, num, den)
-
+        return str(whole) if num == 0 else f'{whole} {num}/{den}'
     if num == 0:
         return str(whole)
     den_str = _FRACTION_STRING_EN[den]
     if whole == 0:
-        if num == 1:
-            return_string = 'a {}'.format(den_str)
-        else:
-            return_string = '{} {}'.format(num, den_str)
+        return_string = f'a {den_str}' if num == 1 else f'{num} {den_str}'
     elif num == 1:
-        return_string = '{} and a {}'.format(whole, den_str)
+        return_string = f'{whole} and a {den_str}'
     else:
-        return_string = '{} and {} {}'.format(whole, num, den_str)
+        return_string = f'{whole} and {num} {den_str}'
     if num > 1:
         return_string += 's'
     return return_string
@@ -124,27 +116,20 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
             # deal with 1000, 2000, 2001, 2100, 3123, etc
             # is skipped as the rest of the
             # functin deals with this already
-            if _num[1:4] == '000' or _num[1:3] == '00' or int(_num[0:2]) >= 20:
+            if _num[1:4] == '000' or _num[1:3] == '00' or int(_num[:2]) >= 20:
                 pass
-            # deal with 1900, 1300, etc
-            # i.e. 1900 => nineteen hundred
             elif _num[2:4] == '00':
-                first = number_names[int(_num[0:2])]
+                first = number_names[int(_num[:2])]
                 last = number_names[100]
-                return first + " " + last
-            # deal with 1960, 1961, etc
-            # i.e. 1960 => nineteen sixty
-            #      1961 => nineteen sixty one
+                return f"{first} {last}"
             else:
-                first = number_names[int(_num[0:2])]
+                first = number_names[int(_num[:2])]
                 if _num[3:4] == '0':
                     last = number_names[int(_num[2:4])]
                 else:
                     second = number_names[int(_num[2:3])*10]
-                    last = second + " " + number_names[int(_num[3:4])]
-                return first + " " + last
-    # exception used to catch any unforseen edge cases
-    # will default back to normal subroutine
+                    last = f"{second} {number_names[int(_num[3:4])]}"
+                return f"{first} {last}"
     except Exception as e:
         LOG.error('Exception in pronounce_number_en: {}' + repr(e))
 
@@ -160,11 +145,10 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                 return digits[n]
             elif n <= 99:
                 q, r = divmod(n, 10)
-                return tens[q - 1] + (" " + _sub_thousand(r) if r else "")
+                return tens[q - 1] + (f" {_sub_thousand(r)}" if r else "")
             else:
                 q, r = divmod(n, 100)
-                return digits[q] + " hundred" + (
-                    " and " + _sub_thousand(r) if r else "")
+                return (f"{digits[q]} hundred" + (f" and {_sub_thousand(r)}" if r else ""))
 
         def _short_scale(n):
             if n >= max(_SHORT_SCALE_EN.keys()):
@@ -206,21 +190,17 @@ def pronounce_number_en(num, places=2, short_scale=True, scientific=False):
                     # plus one as we skip 'thousand'
                     # (and 'hundred', but this is excluded by index value)
                     number = number.replace(',', '')
-                    number += " " + hundreds[i+1]
+                    number += f" {hundreds[i + 1]}"
                 res.append(number)
             return ", ".join(reversed(res))
 
-        if short_scale:
-            result += _short_scale(num)
-        else:
-            result += _long_scale(num)
-
+        result += _short_scale(num) if short_scale else _long_scale(num)
     # Deal with fractional part
-    if not num == int(num) and places > 0:
+    if num != int(num) and places > 0:
         result += " point"
         place = 10
         while int(num * place) % 10 > 0 and places > 0:
-            result += " " + number_names[int(num * place) % 10]
+            result += f" {number_names[int(num * place) % 10]}"
             place *= 10
             places -= 1
     return result
@@ -245,12 +225,7 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -263,21 +238,19 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
 
         # Either "0 8 hundred" or "13 hundred"
         if string[0] == '0':
-            speak += pronounce_number_en(int(string[0])) + " "
+            speak += f"{pronounce_number_en(int(string[0]))} "
             speak += pronounce_number_en(int(string[1]))
         else:
-            speak = pronounce_number_en(int(string[0:2]))
+            speak = pronounce_number_en(int(string[:2]))
 
         speak += " "
         if string[3:5] == '00':
             speak += "hundred"
+        elif string[3] == '0':
+            speak += f"{pronounce_number_en(0)} "
+            speak += pronounce_number_en(int(string[4]))
         else:
-            if string[3] == '0':
-                speak += pronounce_number_en(0) + " "
-                speak += pronounce_number_en(int(string[4]))
-            else:
-                speak += pronounce_number_en(int(string[3:5]))
-        return speak
+            speak += pronounce_number_en(int(string[3:5]))
     else:
         if dt.hour == 0 and dt.minute == 0:
             return "midnight"
@@ -294,16 +267,13 @@ def nice_time_en(dt, speech=True, use_24hour=False, use_ampm=False):
 
         if dt.minute == 0:
             if not use_ampm:
-                return speak + " o'clock"
+                return f"{speak} o'clock"
         else:
             if dt.minute < 10:
                 speak += " oh"
-            speak += " " + pronounce_number_en(dt.minute)
+            speak += f" {pronounce_number_en(dt.minute)}"
 
         if use_ampm:
-            if dt.hour > 11:
-                speak += " p.m."
-            else:
-                speak += " a.m."
+            speak += " p.m." if dt.hour > 11 else " a.m."
 
-        return speak
+    return speak

@@ -74,10 +74,7 @@ class CommonPlaySkill(MycroftSkill, ABC):
                                         "skill_id": self.skill_id,
                                         "searching": True}))
 
-        # Now invoke the CPS handler to let the skill perform its search
-        result = self.CPS_match_query_phrase(search_phrase)
-
-        if result:
+        if result := self.CPS_match_query_phrase(search_phrase):
             match = result[0]
             level = result[1]
             callback = result[2] if len(result) > 2 else None

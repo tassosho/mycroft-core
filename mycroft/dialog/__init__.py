@@ -115,7 +115,7 @@ class DialogLoader:
         """
         directory = Path(dialog_dir)
         if not directory.exists() or not directory.is_dir():
-            LOG.warning("No dialog files found: {}".format(dialog_dir))
+            LOG.warning(f"No dialog files found: {dialog_dir}")
             return self.__renderer
 
         for path, _, files in os.walk(str(directory)):
@@ -146,10 +146,10 @@ def get(phrase, lang=None, context=None):
         from mycroft.configuration import Configuration
         lang = Configuration.get().get("lang")
 
-    filename = "text/" + lang.lower() + "/" + phrase + ".dialog"
+    filename = f"text/{lang.lower()}/{phrase}.dialog"
     template = resolve_resource_file(filename)
     if not template:
-        LOG.debug("Resource file not found: {}".format(filename))
+        LOG.debug(f"Resource file not found: {filename}")
         return phrase
 
     stache = MustacheDialogRenderer()

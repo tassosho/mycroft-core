@@ -76,10 +76,7 @@ class SkillLoader:
     def is_blacklisted(self):
         """Boolean value representing whether or not a skill is blacklisted."""
         blacklist = self.config['skills'].get('blacklisted_skills', [])
-        if self.skill_id in blacklist:
-            return True
-        else:
-            return False
+        return self.skill_id in blacklist
 
     def reload_needed(self):
         """Load an unloaded skill or reload unloaded/changed skill.
@@ -90,8 +87,7 @@ class SkillLoader:
         try:
             self.last_modified = _get_last_modified_time(self.skill_directory)
         except FileNotFoundError as e:
-            LOG.error('Failed to get last_modification time '
-                      '({})'.format(repr(e)))
+            LOG.error(f'Failed to get last_modification time ({repr(e)})')
             self.last_modified = self.last_loaded
 
         modified = self.last_modified > self.last_loaded
@@ -106,13 +102,13 @@ class SkillLoader:
         return modified and reload_allowed
 
     def reload(self):
-        LOG.info('ATTEMPTING TO RELOAD SKILL: ' + self.skill_id)
+        LOG.info(f'ATTEMPTING TO RELOAD SKILL: {self.skill_id}')
         if self.instance:
             self._unload()
         self._load()
 
     def load(self):
-        LOG.info('ATTEMPTING TO LOAD SKILL: ' + self.skill_id)
+        LOG.info(f'ATTEMPTING TO LOAD SKILL: {self.skill_id}')
         self._load()
 
     def _unload(self):
@@ -144,7 +140,7 @@ class SkillLoader:
             log_msg = 'An error occurred while shutting down {}'
             LOG.exception(log_msg.format(self.instance.name))
         else:
-            LOG.info('Skill {} shut down successfully'.format(self.skill_id))
+            LOG.info(f'Skill {self.skill_id} shut down successfully')
 
     def _garbage_collect(self):
         """Invoke Python garbage collector to remove false references"""
@@ -205,14 +201,12 @@ class SkillLoader:
             error_msg = 'Failed to load {} due to a missing file.'
             LOG.exception(error_msg.format(self.skill_id))
         except Exception as e:
-            LOG.exception('Failed to load skill: '
-                          '{} ({})'.format(self.skill_id, repr(e)))
+            LOG.exception(f'Failed to load skill: {self.skill_id} ({repr(e)})')
         else:
-            module_is_skill = (
-                hasattr(skill_module, 'create_skill') and
-                callable(skill_module.create_skill)
-            )
-            if module_is_skill:
+            if module_is_skill := (
+                hasattr(skill_module, 'create_skill')
+                and callable(skill_module.create_skill)
+            ):
                 return skill_module
         return None  # Module wasn't loaded
 
@@ -246,16 +240,13 @@ class SkillLoader:
 
     def _check_for_first_run(self):
         """The very first time a skill is run, speak the intro."""
-        first_run = self.instance.settings.get(
-            "__mycroft_skill_firstrun",
-            True
-        )
-        if first_run:
-            LOG.info("First run of " + self.skill_id)
+        if first_run := self.instance.settings.get(
+            "__mycroft_skill_firstrun", True
+        ):
+            LOG.info(f"First run of {self.skill_id}")
             self.instance.settings["__mycroft_skill_firstrun"] = False
             self.instance.settings.store()
-            intro = self.instance.get_intro_message()
-            if intro:
+            if intro := self.instance.get_intro_message():
                 self.instance.speak(intro)
 
     def _communicate_load_status(self):
@@ -270,14 +261,14 @@ class SkillLoader:
                 )
             )
             self.bus.emit(message)
-            LOG.info('Skill {} loaded successfully'.format(self.skill_id))
+            LOG.info(f'Skill {self.skill_id} loaded successfully')
         else:
             message = Message(
                 'mycroft.skills.loading_failure',
                 data=dict(path=self.skill_directory, id=self.skill_id)
             )
             self.bus.emit(message)
-            LOG.error('Skill {} failed to load'.format(self.skill_id))
+            LOG.error(f'Skill {self.skill_id} failed to load')
 
     def _upload_settings_meta(self):
         if self.loaded:

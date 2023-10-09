@@ -92,54 +92,39 @@ def nice_number_es(number, speech, denominators):
     num = 0
     den = 0
 
-    result = convert_to_mixed_fraction(number, denominators)
-
-    if not result:
-        # Give up, just represent as a 3 decimal number
-        whole = round(number, 3)
-    else:
+    if result := convert_to_mixed_fraction(number, denominators):
         whole, num, den = result
 
-    if not speech:
-        if num == 0:
-            strNumber = '{:,}'.format(whole)
-            strNumber = strNumber.replace(",", " ")
-            strNumber = strNumber.replace(".", ",")
-            return strNumber
-        else:
-            return '{} {}/{}'.format(whole, num, den)
     else:
+        # Give up, just represent as a 3 decimal number
+        whole = round(number, 3)
+    if speech:
         if num == 0:
             # if the number is not a fraction, nothing to do
             strNumber = str(whole)
-            strNumber = strNumber.replace(".", ",")
-            return strNumber
+            return strNumber.replace(".", ",")
         den_str = FRACTION_STRING_ES[den]
         # if it is not an integer
         if whole == 0:
             # if there is no whole number
-            if num == 1:
-                # if numerator is 1, return "un medio", for example
-                strNumber = 'un {}'.format(den_str)
-            else:
-                # else return "cuatro tercios", for example
-                strNumber = '{} {}'.format(num, den_str)
+            strNumber = f'un {den_str}' if num == 1 else f'{num} {den_str}'
         elif num == 1:
             # if there is a whole number and numerator is 1
-            if den == 2:
-                # if denominator is 2, return "1 y medio", for example
-                strNumber = '{} y {}'.format(whole, den_str)
-            else:
-                # else return "1 y 1 tercio", for example
-                strNumber = '{} y 1 {}'.format(whole, den_str)
+            strNumber = f'{whole} y {den_str}' if den == 2 else f'{whole} y 1 {den_str}'
         else:
             # else return "2 y 3 cuarto", for example
-            strNumber = '{} y {} {}'.format(whole, num, den_str)
+            strNumber = f'{whole} y {num} {den_str}'
         if num > 1 and den != 3:
             # if the numerator is greater than 1 and the denominator
             # is not 3 ("tercio"), add an s for plural
             strNumber += 's'
 
+    elif num == 0:
+        strNumber = '{:,}'.format(whole)
+        strNumber = strNumber.replace(",", " ")
+        return strNumber.replace(".", ",")
+    else:
+        return f'{whole} {num}/{den}'
     return strNumber
 
 
@@ -159,9 +144,7 @@ def pronounce_number_es(num, places=2):
         # TODO: Soporta a números por encima de 100
         return str(num)
 
-    result = ""
-    if num < 0:
-        result = "menos "
+    result = "menos " if num < 0 else ""
     num = abs(num)
 
     # del 21 al 29 tienen una pronunciación especial
@@ -181,24 +164,24 @@ def pronounce_number_es(num, places=2):
             elif ones == 6:
                 result += "iséis"
             else:
-                result += "i" + NUM_STRING_ES[ones]
+                result += f"i{NUM_STRING_ES[ones]}"
     elif num >= 30:  # de 30 en adelante
         tens = int(num-int(num) % 10)
         ones = int(num - tens)
         result += NUM_STRING_ES[tens]
         if ones > 0:
-            result += " y " + NUM_STRING_ES[ones]
+            result += f" y {NUM_STRING_ES[ones]}"
     else:
         result += NUM_STRING_ES[int(num)]
 
     # Deal with decimal part, in spanish is commonly used the comma
     # instead the dot. Decimal part can be written both with comma
     # and dot, but when pronounced, its pronounced "coma"
-    if not num == int(num) and places > 0:
+    if num != int(num) and places > 0:
         result += " coma"
         place = 10
         while int(num*place) % 10 > 0 and places > 0:
-            result += " " + NUM_STRING_ES[int(num*place) % 10]
+            result += f" {NUM_STRING_ES[int(num * place) % 10]}"
             place *= 10
             places -= 1
     return result
@@ -223,12 +206,7 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
         # e.g. "03:01" or "14:22"
         string = dt.strftime("%H:%M")
     else:
-        if use_ampm:
-            # e.g. "3:01 AM" or "2:22 PM"
-            string = dt.strftime("%I:%M %p")
-        else:
-            # e.g. "3:01" or "2:22"
-            string = dt.strftime("%I:%M")
+        string = dt.strftime("%I:%M %p") if use_ampm else dt.strftime("%I:%M")
         if string[0] == '0':
             string = string[1:]  # strip leading zeros
 
@@ -242,16 +220,12 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
         # 24h, no hay que especificar ninguna precisión adicional
         # como "la noche", "la tarde" o "la mañana"
         # http://lema.rae.es/dpd/srv/search?id=YNoTWNJnAD6bhhVBf9
-        if dt.hour == 1:
-            speak += "la una"
-        else:
-            speak += "las " + pronounce_number_es(dt.hour)
-
+        speak += "la una" if dt.hour == 1 else f"las {pronounce_number_es(dt.hour)}"
         # las 14:04 son "las catorce cero cuatro"
         if dt.minute < 10:
-            speak += " cero " + pronounce_number_es(dt.minute)
+            speak += f" cero {pronounce_number_es(dt.minute)}"
         else:
-            speak += " " + pronounce_number_es(dt.minute)
+            speak += f" {pronounce_number_es(dt.minute)}"
 
     else:
         # Prepare for "tres menos cuarto" ??
@@ -274,14 +248,14 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
             minute = dt.minute
             hour = dt.hour
 
-        if hour == 0 or hour == 12:
+        if hour in [0, 12]:
             speak += "las doce"
-        elif hour == 1 or hour == 13:
+        elif hour in [1, 13]:
             speak += "la una"
         elif hour < 13:
-            speak = "las " + pronounce_number_es(hour)
+            speak = f"las {pronounce_number_es(hour)}"
         else:
-            speak = "las " + pronounce_number_es(hour-12)
+            speak = f"las {pronounce_number_es(hour - 12)}"
 
         if minute != 0:
             # las horas especiales
@@ -291,11 +265,10 @@ def nice_time_es(dt, speech=True, use_24hour=False, use_ampm=False):
                 speak += " y media"
             elif minute == -15:
                 speak += " menos cuarto"
-            else:  # seis y nueve. siete y veinticinco
-                if minute > 0:
-                    speak += " y " + pronounce_number_es(minute)
-                else:  # si son las siete menos veinte, no ponemos la "y"
-                    speak += " " + pronounce_number_es(minute)
+            elif minute > 0:
+                speak += f" y {pronounce_number_es(minute)}"
+            else:  # si son las siete menos veinte, no ponemos la "y"
+                speak += f" {pronounce_number_es(minute)}"
 
         # si no especificamos de la tarde, noche, mañana, etc
         if minute == 0 and not use_ampm:

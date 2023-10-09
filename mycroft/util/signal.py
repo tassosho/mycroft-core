@@ -65,8 +65,7 @@ def ensure_directory_exists(directory, domain=None):
             save = os.umask(0)
             os.makedirs(directory, 0o777)  # give everyone rights to r/w here
         except OSError:
-            LOG.warning("Failed to create: " + directory)
-            pass
+            LOG.warning(f"Failed to create: {directory}")
         finally:
             os.umask(save)
 

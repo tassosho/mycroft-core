@@ -82,7 +82,7 @@ def resolve_resource_file(res_name):
         return res_name
 
     # Now look for ~/.mycroft/res_name (in user folder)
-    filename = os.path.expanduser("~/.mycroft/" + res_name)
+    filename = os.path.expanduser(f"~/.mycroft/{res_name}")
     if os.path.isfile(filename):
         return filename
 
@@ -95,10 +95,7 @@ def resolve_resource_file(res_name):
     # Finally look for it in the source package
     filename = os.path.join(os.path.dirname(__file__), '..', 'res', res_name)
     filename = os.path.abspath(os.path.normpath(filename))
-    if os.path.isfile(filename):
-        return filename
-
-    return None  # Resource cannot be resolved
+    return filename if os.path.isfile(filename) else None
 
 
 def play_audio_file(uri: str, environment=None):
@@ -122,14 +119,12 @@ def play_audio_file(uri: str, environment=None):
         '.ogg': play_ogg
     }
     _, extension = os.path.splitext(uri)
-    play_function = extension_to_function.get(extension.lower())
-    if play_function:
+    if play_function := extension_to_function.get(extension.lower()):
         return play_function(uri, environment)
-    else:
-        LOG.error("Could not find a function capable of playing {uri}."
-                  " Supported formats are {keys}."
-                  .format(uri=uri, keys=list(extension_to_function.keys())))
-        return None
+    LOG.error("Could not find a function capable of playing {uri}."
+              " Supported formats are {keys}."
+              .format(uri=uri, keys=list(extension_to_function.keys())))
+    return None
 
 
 _ENVIRONMENT = deepcopy(os.environ)
@@ -168,8 +163,8 @@ def play_wav(uri, environment=None):
     try:
         return subprocess.Popen(play_wav_cmd, env=environment)
     except Exception as e:
-        LOG.error("Failed to launch WAV: {}".format(play_wav_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        LOG.error(f"Failed to launch WAV: {play_wav_cmd}")
+        LOG.debug(f"Error: {repr(e)}", exc_info=True)
         return None
 
 
@@ -196,8 +191,8 @@ def play_mp3(uri, environment=None):
     try:
         return subprocess.Popen(play_mp3_cmd, env=environment)
     except Exception as e:
-        LOG.error("Failed to launch MP3: {}".format(play_mp3_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        LOG.error(f"Failed to launch MP3: {play_mp3_cmd}")
+        LOG.debug(f"Error: {repr(e)}", exc_info=True)
         return None
 
 
@@ -224,8 +219,8 @@ def play_ogg(uri, environment=None):
     try:
         return subprocess.Popen(play_ogg_cmd, env=environment)
     except Exception as e:
-        LOG.error("Failed to launch OGG: {}".format(play_ogg_cmd))
-        LOG.debug("Error: {}".format(repr(e)), exc_info=True)
+        LOG.error(f"Failed to launch OGG: {play_ogg_cmd}")
+        LOG.debug(f"Error: {repr(e)}", exc_info=True)
         return None
 
 
@@ -247,13 +242,13 @@ def find_input_device(device_name):
 
         Returns: device_index (int) or None if device wasn't found
     """
-    LOG.info('Searching for input device: {}'.format(device_name))
+    LOG.info(f'Searching for input device: {device_name}')
     LOG.debug('Devices: ')
     pa = pyaudio.PyAudio()
     pattern = re.compile(device_name)
     for device_index in range(pa.get_device_count()):
         dev = pa.get_device_info_by_index(device_index)
-        LOG.debug('   {}'.format(dev['name']))
+        LOG.debug(f"   {dev['name']}")
         if dev['maxInputChannels'] > 0 and pattern.match(dev['name']):
             LOG.debug('    ^-- matched')
             return device_index
@@ -291,12 +286,7 @@ def connected():
     Returns:
         True if internet connection can be detected
     """
-    if _connected_dns():
-        # Outside IP is reachable check if names are resolvable
-        return _connected_google()
-    else:
-        # DNS can't be reached, do a complete fetch in case it's blocked
-        return _connected_ncsi()
+    return _connected_google() if _connected_dns() else _connected_ncsi()
 
 
 def _connected_ncsi():
@@ -348,7 +338,7 @@ def _connected_google():
     try:
         urlopen('https://www.google.com', timeout=3)
     except URLError as ue:
-        LOG.debug('Attempt to connect to internet failed: ' + str(ue.reason))
+        LOG.debug(f'Attempt to connect to internet failed: {str(ue.reason)}')
     else:
         connect_success = True
 
@@ -521,8 +511,9 @@ def create_echo_function(name, whitelist=None):
             # Whitelist match beginning of message
             # i.e 'mycroft.audio.service' will allow the message
             # 'mycroft.audio.service.play' for example
-            if whitelist and not any([msg_type.startswith(e)
-                                     for e in whitelist]):
+            if whitelist and not any(
+                msg_type.startswith(e) for e in whitelist
+            ):
                 return
 
             if blacklist and msg_type in blacklist:
@@ -557,6 +548,7 @@ def create_echo_function(name, whitelist=None):
         if _log_all_bus_messages:
             # Listen for messages and echo them for logging
             LOG(name).info("BUS: {}".format(message))
+
     return echo
 
 

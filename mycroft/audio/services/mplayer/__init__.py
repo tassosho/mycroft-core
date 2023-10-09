@@ -45,7 +45,7 @@ class MPlayerService(AudioBackend):
 
     def add_list(self, tracks):
         self.tracks += tracks
-        LOG.info("Track list is " + str(tracks))
+        LOG.info(f"Track list is {str(tracks)}")
 
     def play(self, repeat=False):
         """ Start playback of playlist.
@@ -90,10 +90,7 @@ class MPlayerService(AudioBackend):
             self.mpc.volume = self.mpc.volume / 3
 
     def restore_volume(self):
-        if self.normal_volume:
-            self.mpc.volume = self.normal_volume
-        else:
-            self.mpc.volume = 50
+        self.mpc.volume = self.normal_volume if self.normal_volume else 50
         self.normal_volume = None
 
     def track_info(self):
@@ -103,8 +100,7 @@ class MPlayerService(AudioBackend):
             Returns:
                 Dict with track info.
         """
-        ret = {}
-        ret['title'] = self.mpc.get_meta_title()
+        ret = {'title': self.mpc.get_meta_title()}
         ret['artist'] = self.mpc.get_meta_artist()
         ret['album'] = self.mpc.get_meta_album()
         ret['genre'] = self.mpc.get_meta_genre()
@@ -126,5 +122,4 @@ def load_service(base_config, emitter):
     services = [(b, backends[b]) for b in backends
                 if backends[b]['type'] == 'mplayer' and
                 backends[b].get("active", True)]
-    instances = [MPlayerService(s[1], emitter, s[0]) for s in services]
-    return instances
+    return [MPlayerService(s[1], emitter, s[0]) for s in services]
